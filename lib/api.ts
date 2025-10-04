@@ -184,6 +184,23 @@ class ApiClient {
     }
 
     // ... other methods like getTags, createTag, getProfile etc.
+    async getProfileByUsername(username: string): Promise<any> {
+        return this.request(`/profile/${username}`);
+    }
+
+    // You will also need methods for connections
+    async sendFriendRequest(userId: string): Promise<any> {
+        return this.request('/connections', {
+            method: 'POST',
+            body: JSON.stringify({ userId })
+        });
+    }
+
+    async removeFriend(userId: string): Promise<any> {
+        return this.request(`/connections/${userId}`, {
+            method: 'DELETE'
+        });
+    }
 }
 
 export const apiClient = new ApiClient()

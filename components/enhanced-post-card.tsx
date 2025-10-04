@@ -48,7 +48,7 @@ interface EnhancedPostCardProps {
   tags: string[]
   isUpvoted?: boolean
   isDownvoted?: boolean
-  images?: string[]
+  images?: (string | null)[] | null
   postType?: string
   title?: string
 }
@@ -291,12 +291,12 @@ export function EnhancedPostCard({
         {title && <h2 className="text-lg font-bold mb-2 text-foreground">{title}</h2>}
         <p className="text-sm text-foreground mb-4 leading-relaxed text-pretty transition-colors duration-200">{content}</p>
 
-        {images.length > 0 && (
+        {images && images.length > 0 && (
           <div
             className={cn("grid gap-2 mb-4", {
-              "grid-cols-1": images.length === 1,
-              "grid-cols-2": images.length === 2,
-              "grid-cols-2 sm:grid-cols-3": images.length >= 3,
+              "grid-cols-1": images && images.length === 1,
+              "grid-cols-2": images && images.length === 2,
+              "grid-cols-2 sm:grid-cols-3": images && images.length >= 3,
             })}
           >
             {images.map((image, index) => (
@@ -313,7 +313,7 @@ export function EnhancedPostCard({
         )}
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map((tag, index) => (
+          {tags && tags.map((tag, index) => (
             <Badge
               key={tag}
               variant="secondary"

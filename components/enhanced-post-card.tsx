@@ -1,56 +1,40 @@
-// enhanced-post-card.tsx
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, Send } from "lucide-react"
+import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, UserPlus } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Textarea } from "@/components/ui/textarea"
-import { Comment as CommentComponent } from "@/components/comment"
-import type { Comment } from "@/lib/types"
-import { apiClient } from "@/lib/api"
+import { CardContent, CardHeader } from "@/components/ui/card"
+import { CardSpotlight } from "@/components/ui/card-spotlight"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-
-interface CommentWithUI {
-  id: string
-  post_id: string
-  author_id: string
-  content: string
-  upvotes: number
-  created_at: string
-  updated_at: string
-  timestamp: string
-  author: {
-    name: string
-    username: string
-    avatar_url: string
-  }
-  isUpvoted?: boolean
-  isDownvoted?: boolean
-  depth?: number
-}
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EnhancedPostCardProps {
-  id: string
+  id: string;
   author: {
-    name: string
-    username: string
-    avatar_url: string
-  }
-  content: string
-  timestamp: string
-  upvotes: number
-  commentCount: number
-  tags: string[]
-  isUpvoted?: boolean
-  isDownvoted?: boolean
-  images?: (string | null)[] | null
-  postType?: string
-  title?: string
+    name: string;
+    username: string;
+    avatar: string;
+  };
+  content: string;
+  timestamp: string;
+  upvotes: number;
+  commentCount: number;
+  tags: string[];
+  isUpvoted?: boolean;
+  isDownvoted?: boolean;
+  images?: string[];
+  postType?: string;
+  title?: string;
+  joinable?: boolean;
 }
 
 export function EnhancedPostCard({
@@ -64,176 +48,38 @@ export function EnhancedPostCard({
   images = [],
   postType = "Misc",
   title,
+  joinable = true,
   isUpvoted: initialIsUpvoted = false,
   isDownvoted: initialIsDownvoted = false,
 }: EnhancedPostCardProps) {
-  const [isUpvotedState, setIsUpvoted] = useState(initialIsUpvoted)
-  const [isDownvoted, setIsDownvoted] = useState(initialIsDownvoted)
-  const [isBookmarked, setIsBookmarked] = useState(false)
-  const [currentUpvotes, setCurrentUpvotes] = useState(upvotes)
-  const [isVoting, setIsVoting] = useState(false)
-  const [voteState, setVoteState] = useState<'up' | 'down' | null>(initialIsUpvoted ? 'up' : initialIsDownvoted ? 'down' : null)
-  const [showComments, setShowComments] = useState(false)
-  const [comments, setComments] = useState<CommentWithUI[]>([])
-  const [loadingComments, setLoadingComments] = useState(false)
-  const [newComment, setNewComment] = useState("")
-  const [submittingComment, setSubmittingComment] = useState(false)
-  const [currentCommentCount, setCurrentCommentCount] = useState(commentCount)
-  const { toast } = useToast()
+  const [isUpvotedState, setIsUpvoted] = useState(initialIsUpvoted);
+  const [isDownvoted, setIsDownvoted] = useState(initialIsDownvoted);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
+  const [isVoting, setIsVoting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!isVoting) setCurrentUpvotes(upvotes)
-  }, [upvotes, isVoting])
+    setCurrentUpvotes(upvotes);
+  }, [upvotes]);
 
-  const loadComments = async () => {
-    if (loadingComments) return
-    setLoadingComments(true)
-    try {
-      const fetchedComments = await apiClient.getComments(id)
-      // Transform the comments to match our UI interface
-      const transformedComments: CommentWithUI[] = fetchedComments.map(comment => ({
-        ...comment,
-        timestamp: new Date(comment.created_at).toLocaleString(),
-        author: {
-          name: comment.author?.full_name || 'Unknown',
-          username: comment.author?.username || 'unknown',
-          // MODIFICATION: Changed `avatar` key to `avatar_url` to match component props
-          avatar_url: comment.author?.avatar_url || '/placeholder.svg'
-        },
-        isUpvoted: comment.user_vote === 'up',
-        isDownvoted: comment.user_vote === 'down',
-        depth: 0
-      }))
-      setComments(transformedComments)
-    } catch (error: any) {
-      toast({
-        title: "Failed to load comments",
-        description: error?.message || "Could not load comments. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoadingComments(false)
+  const handleVote = async (voteType: 'up' | 'down') => {
+    // This is a placeholder. You should replace it with your actual API calls.
+    console.log(`Voting ${voteType} on post ${id}`);
+    if (voteType === 'up') {
+      const wasUpvoted = isUpvotedState;
+      const wasDownvoted = isDownvoted;
+      setCurrentUpvotes(currentUpvotes + (wasUpvoted ? -1 : (wasDownvoted ? 2 : 1)));
+      setIsUpvoted(!wasUpvoted);
+      if (!wasUpvoted) setIsDownvoted(false);
+    } else {
+      const wasUpvoted = isUpvotedState;
+      const wasDownvoted = isDownvoted;
+      setCurrentUpvotes(currentUpvotes + (wasDownvoted ? 1 : (wasUpvoted ? -2 : -1)));
+      setIsDownvoted(!wasDownvoted);
+      if (!wasDownvoted) setIsUpvoted(false);
     }
-  }
-
-  const handleCommentClick = async () => {
-    if (!showComments) {
-      await loadComments()
-    }
-    setShowComments(!showComments)
-  }
-
-  const handleSubmitComment = async () => {
-    if (!newComment.trim() || submittingComment) return
-    setSubmittingComment(true)
-    try {
-      const comment = await apiClient.createComment({
-        postId: id,
-        content: newComment.trim()
-      })
-      // Transform the new comment to match our UI interface
-      const transformedComment: CommentWithUI = {
-        ...comment,
-        timestamp: new Date(comment.created_at).toLocaleString(),
-        author: {
-          name: comment.author?.full_name || 'Unknown',
-          username: comment.author?.username || 'unknown',
-          // MODIFICATION: Changed `avatar` key to `avatar_url` to match component props
-          avatar_url: comment.author?.avatar_url || '/placeholder.svg'
-        },
-        isUpvoted: false,
-        isDownvoted: false,
-        depth: 0
-      }
-      setComments(prev => [...prev, transformedComment])
-      setNewComment("")
-      setCurrentCommentCount(prev => prev + 1)
-      toast({
-        title: "Comment posted",
-        description: "Your comment has been posted successfully.",
-      })
-    } catch (error: any) {
-      toast({
-        title: "Failed to post comment",
-        description: error?.message || "Could not post comment. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setSubmittingComment(false)
-    }
-  }
-
-  const handleReply = (commentId: string) => {
-    // For now, just focus on the comment input
-    // In a full implementation, you might want to show a reply form
-    setNewComment(`@${commentId} `)
-  }
-
-  const handleUpvote = async () => {
-    if (isVoting) return
-    setIsVoting(true)
-
-    try {
-      if (voteState === 'up') {
-        // remove existing upvote
-        const res = await apiClient.removeVote(id)
-        if (res && (res as any).voteType === null) {
-          setVoteState(null)
-          setIsUpvoted(false)
-          setIsDownvoted(false)
-        }
-      } else {
-        // apply upvote (from neutral or from downvoted)
-        const res = await apiClient.votePost(id, "up")
-        if (res && (res as any).voteType === 'up') {
-          setVoteState('up')
-          setIsUpvoted(true)
-          setIsDownvoted(false)
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Vote failed",
-        description: error?.message || "Failed to register vote. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsVoting(false)
-    }
-  }
-
-  const handleDownvote = async () => {
-    if (isVoting) return
-    setIsVoting(true)
-
-    try {
-      if (voteState === 'down') {
-        // remove downvote
-        const res = await apiClient.removeVote(id)
-        if (res && (res as any).voteType === null) {
-          setVoteState(null)
-          setIsUpvoted(false)
-          setIsDownvoted(false)
-        }
-      } else {
-        // apply downvote (from neutral or from upvoted)
-        const res = await apiClient.votePost(id, "down")
-        if (res && (res as any).voteType === 'down') {
-          setVoteState('down')
-          setIsUpvoted(false)
-          setIsDownvoted(true)
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Vote failed",
-        description: error?.message || "Failed to register vote. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsVoting(false)
-    }
-  }
+  };
 
   const getPostTypeColor = (type: string) => {
     const colors = {
@@ -243,174 +89,98 @@ export function EnhancedPostCard({
       Announcement: "bg-orange-500/10 text-orange-500 border-orange-500/20",
       Question: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
       Misc: "bg-red-500/10 text-red-500 border-red-500/20",
-    }
-    return colors[type as keyof typeof colors] || colors.Misc
-  }
+    };
+    return colors[type as keyof typeof colors] || colors.Misc;
+  };
+
+  const UPVOTE_THRESHOLD = 3;
+
+  // FIX: Provide a default author object to prevent crashes if the prop is not ready
+  const safeAuthor = author || { name: "Anonymous", username: "unknown", avatar: "" };
 
   return (
-    <Card className="group nexus-card nexus-slide-in hover:shadow-xl transition-all duration-300 hover:border-primary/30 bg-card/80 backdrop-blur-md border-border/50">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between space-x-2 sm:space-x-4">
+    <CardSpotlight className="group nexus-card nexus-slide-in bg-card/80 backdrop-blur-md border-border/50 p-0 rounded-2xl">
+      <CardHeader className="p-4 sm:p-6 pb-3">
+        <div className="flex items-start justify-between space-x-4">
           <div className="flex items-center space-x-3 min-w-0">
-            <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/40 group-hover:scale-105">
-              <AvatarImage src={author.avatar_url || "/placeholder.svg"} alt={author.name} />
+            <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-primary/20">
+              <AvatarImage src={safeAuthor.avatar || "/placeholder.svg"} alt={safeAuthor.name} />
               <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                {author.name ? author.name.split(" ").map((n) => n[0]).join("") : author.username?.charAt(0).toUpperCase() || "U"}
+                {/* FIX: Use the safe author name and add a check for the name itself */}
+                {(safeAuthor.name || 'A').split(" ").map((n) => n[0]).join("")}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <h3 className="font-semibold text-sm transition-colors duration-200 group-hover:text-primary break-all">
-                  {author.username}
-                </h3>
-                <Badge variant="outline" className={`text-xs transition-all duration-200 hover:scale-105 ${getPostTypeColor(postType)}`}>
-                  {postType}
-                </Badge>
+                <h3 className="font-semibold text-sm break-all">{safeAuthor.name}</h3>
+                <Badge variant="outline" className={`text-xs ${getPostTypeColor(postType)}`}>{postType}</Badge>
               </div>
-              <p className="text-xs text-muted-foreground transition-colors duration-200 break-all">
-                @{author.name} • {timestamp}
-              </p>
+              <p className="text-xs text-muted-foreground break-all">@{safeAuthor.username} • {timestamp}</p>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-50 group-hover:opacity-100 flex-shrink-0 transition-all duration-300 hover:bg-primary/10 hover:scale-110">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-50 group-hover:opacity-100 flex-shrink-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="animate-in slide-in-from-top-2 duration-200">
-              <DropdownMenuItem className="cursor-pointer hover:bg-primary/10 transition-colors">Report Post</DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer hover:bg-primary/10 transition-colors">Hide Post</DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer hover:bg-primary/10 transition-colors">Copy Link</DropdownMenuItem>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Report Post</DropdownMenuItem>
+              <DropdownMenuItem>Hide Post</DropdownMenuItem>
+              <DropdownMenuItem>Copy Link</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="p-4 sm:p-6 pt-0">
         {title && <h2 className="text-lg font-bold mb-2 text-foreground">{title}</h2>}
-        <p className="text-sm text-foreground mb-4 leading-relaxed text-pretty transition-colors duration-200">{content}</p>
+        <p className="text-sm text-foreground mb-4 leading-relaxed text-pretty">{content}</p>
 
         {images && images.length > 0 && (
-          <div
-            className={cn("grid gap-2 mb-4", {
-              "grid-cols-1": images && images.length === 1,
-              "grid-cols-2": images && images.length === 2,
-              "grid-cols-2 sm:grid-cols-3": images && images.length >= 3,
-            })}
-          >
+          <div className={cn("grid gap-2 mb-4", { "grid-cols-1": images.length === 1, "grid-cols-2": images.length === 2, "grid-cols-2 sm:grid-cols-3": images.length >= 3 })}>
             {images.map((image, index) => (
               <div key={index} className="aspect-video bg-muted rounded-lg overflow-hidden group/image">
-                <img
-                  src={image || "/placeholder.svg"}
-                  alt={`Post image ${index + 1}`}
-                  className="w-full h-full object-cover transition-all duration-500 group-hover/image:scale-110"
-                  onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
-                />
+                <img src={image || "/placeholder.svg"} alt={`Post image ${index + 1}`} className="w-full h-full object-cover transition-all duration-500 group-hover/image:scale-110" onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.src = "/placeholder.svg" }} />
               </div>
             ))}
           </div>
         )}
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {tags && tags.map((tag, index) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="text-xs nexus-tag nexus-interactive transition-all duration-200 hover:bg-primary/20 cursor-pointer"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              #{tag}
-            </Badge>
+          {tags.map((tag, index) => (
+            <Badge key={tag} variant="secondary" className="text-xs nexus-tag" style={{ animationDelay: `${index * 50}ms` }}>#{tag}</Badge>
           ))}
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t border-border/50">
           <div className="flex items-center space-x-1 sm:space-x-2">
             <div className="flex items-center bg-muted/50 rounded-lg p-1 backdrop-blur-sm">
-              <Button variant="ghost" size="sm" onClick={handleUpvote} disabled={isVoting} className={`h-8 w-8 p-0 nexus-button transition-all duration-200 ${isUpvotedState ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}>
-                <ArrowUp className={`h-4 w-4 transition-transform duration-200 ${isUpvotedState ? "scale-110" : ""}`} />
-              </Button>
-              <span className="text-sm font-medium px-2 min-w-[2rem] text-center transition-all duration-200 font-mono">{currentUpvotes}</span>
-              <Button variant="ghost" size="sm" onClick={handleDownvote} disabled={isVoting} className={`h-8 w-8 p-0 nexus-button transition-all duration-200 ${isDownvoted ? "text-destructive bg-destructive/20" : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"}`}>
-                <ArrowDown className={`h-4 w-4 transition-transform duration-200 ${isDownvoted ? "scale-110" : ""}`} />
-              </Button>
+              <Button variant="ghost" size="sm" onClick={() => handleVote('up')} disabled={isVoting} className={`h-8 w-8 p-0 ${isUpvotedState ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><ArrowUp className={`h-4 w-4 ${isUpvotedState ? "scale-110" : ""}`} /></Button>
+              <span className="text-sm font-medium px-2 min-w-[2rem] text-center font-mono">{currentUpvotes}</span>
+              <Button variant="ghost" size="sm" onClick={() => handleVote('down')} disabled={isVoting} className={`h-8 w-8 p-0 ${isDownvoted ? "text-destructive bg-destructive/20" : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"}`}><ArrowDown className={`h-4 w-4 ${isDownvoted ? "scale-110" : ""}`} /></Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCommentClick}
-              className={`h-8 px-2 sm:px-3 transition-all duration-200 nexus-button hover:bg-primary/10 ${showComments ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
-                }`}
-            >
+            <Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-primary">
               <MessageCircle className="h-4 w-4 mr-1" />
-              <span className="text-xs font-medium font-mono">{currentCommentCount}</span>
+              <span className="text-xs font-medium font-mono">{commentCount}</span>
             </Button>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <Button variant="ghost" size="sm" onClick={() => setIsBookmarked(!isBookmarked)} className={`h-8 w-8 p-0 nexus-button transition-all duration-200 ${isBookmarked ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}>
-              <Bookmark className={`h-4 w-4 transition-all duration-200 ${isBookmarked ? "fill-current scale-110" : ""}`} />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary transition-all duration-200 nexus-button hover:bg-primary/10">
-              <Share2 className="h-4 w-4" />
-            </Button>
+            {joinable && currentUpvotes >= UPVOTE_THRESHOLD && (
+              <Link href={`/join/${id}`} passHref>
+                <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
+                  <UserPlus className="h-4 w-4 mr-2"/>
+                  Join
+                </Button>
+              </Link>
+            )}
+            
+            <Button variant="ghost" size="sm" onClick={() => setIsBookmarked(!isBookmarked)} className={`h-8 w-8 p-0 ${isBookmarked ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current scale-110" : ""}`} /></Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"><Share2 className="h-4 w-4" /></Button>
           </div>
         </div>
-
-        {/* Comments Section */}
-        {showComments && (
-          <div className="border-t border-border/50 pt-4 mt-4">
-            <div className="space-y-4">
-              {/* Comment Input */}
-              <div className="flex space-x-2">
-                <Textarea
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="flex-1 min-h-[80px] resize-none"
-                  disabled={submittingComment}
-                />
-                <Button
-                  onClick={handleSubmitComment}
-                  disabled={!newComment.trim() || submittingComment}
-                  size="sm"
-                  className="self-end"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Comments List */}
-              <div className="space-y-3">
-                {loadingComments ? (
-                  <div className="text-center text-sm text-muted-foreground py-4">
-                    Loading comments...
-                  </div>
-                ) : comments.length === 0 ? (
-                  <div className="text-center text-sm text-muted-foreground py-4">
-                    No comments yet. Be the first to comment!
-                  </div>
-                ) : (
-                  comments.map((comment) => (
-                    <CommentComponent
-                      key={comment.id}
-                      id={comment.id}
-                      author={comment.author}
-                      content={comment.content}
-                      timestamp={comment.timestamp}
-                      upvotes={comment.upvotes}
-                      isUpvoted={comment.isUpvoted}
-                      isDownvoted={comment.isDownvoted}
-                      depth={comment.depth || 0}
-                      onReply={handleReply}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
-    </Card>
-  )
+    </CardSpotlight>
+  );
 }
+

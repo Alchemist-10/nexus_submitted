@@ -1,4 +1,6 @@
-import { createServerClient } from "@supabase/ssr"
+// lib/supabase-server.ts
+
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
 export function getSupabaseServerClient() {
@@ -11,6 +13,22 @@ export function getSupabaseServerClient() {
             cookies: {
                 get(name: string) {
                     return cookieStore.get(name)?.value
+                },
+                // ✅ ADDED: This gives the client permission to set a cookie
+                set(name: string, value: string, options: CookieOptions) {
+                    try {
+                        cookieStore.set({ name, value, ...options })
+                    } catch (error) {
+                        // This can be ignored if you have middleware refreshing sessions
+                    }
+                },
+                // ✅ ADDED: This gives the client permission to remove a cookie
+                remove(name: string, options: CookieOptions) {
+                    try {
+                        cookieStore.set({ name, value: '', ...options })
+                    } catch (error) {
+                        // This can be ignored if you have middleware refreshing sessions
+                    }
                 },
             },
         }

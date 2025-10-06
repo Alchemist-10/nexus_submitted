@@ -87,9 +87,8 @@ export default function ThreadPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center space-x-6">
                   <Button
                     variant="ghost"
-                    className={`flex items-center space-x-2 ${
-                      mockPost.isUpvoted ? "text-secondary" : "text-muted-foreground"
-                    } hover:text-secondary`}
+                    className={`flex items-center space-x-2 ${mockPost.isUpvoted ? "text-secondary" : "text-muted-foreground"
+                      } hover:text-secondary`}
                   >
                     <ArrowUp className="h-5 w-5" />
                     <span className="font-medium">{mockPost.upvotes}</span>

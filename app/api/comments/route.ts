@@ -1,158 +1,122 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getSupabaseServerClient } from "@/lib/supabase-server"
+// app/api/comments/route.ts
 
-// GET /api/comments?postId=xxx - Get comments for a post
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+
+// GET /api/comments?postId=... - Get all comments for a post
 export async function GET(request: NextRequest) {
+    const supabase = getSupabaseServerClient();
+    const { searchParams } = request.nextUrl;
+    const postId = searchParams.get("postId");
+
+    if (!postId) {
+        return NextResponse.json({ error: "postId is required" }, { status: 400 });
+    }
+
     try {
-        const supabase = getSupabaseServerClient()
-        const { searchParams } = request.nextUrl
-        const postId = searchParams.get('postId')
-
-        if (!postId) {
-            return NextResponse.json({ error: 'Post ID is required' }, { status: 400 })
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Check authentication
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        // Get comments with author info and the current user's vote status
+        const { data: comments, error } = await supabase
+            .from("comments")
+            .select(
+                `
+                id, content, upvotes, created_at,
+                author:profiles(id, username, full_name, avatar_url),
+                user_vote:votes!left(vote_type, user_id)
+            `
+            )
+            .eq("post_id", postId)
+            .order("created_at", { ascending: true });
 
-        // Check if post exists
-        const { data: post, error: postError } = await supabase
-            .from('posts')
-            .select('id')
-            .eq('id', postId)
-            .single()
+        if (error) throw error;
 
-        if (postError || !post) {
-            return NextResponse.json({ error: 'Post not found' }, { status: 404 })
-        }
+        // Transform comments data to the shape the frontend expects
+        const transformedComments = comments.map((comment: any) => {
+            // Filter the votes array to only include the current user's vote
+            const userVote = comment.user_vote.find((v: any) => v.user_id === user.id);
+            return {
+                id: comment.id,
+                content: comment.content,
+                upvotes: comment.upvotes,
+                timestamp: new Date(comment.created_at).toLocaleString(),
+                author: {
+                    name: comment.author?.full_name || 'Unknown',
+                    username: comment.author?.username || 'unknown',
+                    avatar_url: comment.author?.avatar_url || null
+                },
+                isUpvoted: userVote?.vote_type === 'up',
+                isDownvoted: userVote?.vote_type === 'down'
+            };
+        });
 
-        // Get comments with author info and user vote status
-        const { data: comments, error: commentsError } = await supabase
-            .from('comments')
-            .select(`
-                id,
-                content,
-                upvotes,
-                created_at,
-                author:profiles(id, username, full_name, avatar_url, reputation),
-                user_vote:votes!left(vote_type)
-            `)
-            .eq('post_id', postId)
-            .eq('votes.user_id', user.id)
-            .order('created_at', { ascending: true })
+        return NextResponse.json({ data: transformedComments });
 
-        if (commentsError) {
-            return NextResponse.json({ error: commentsError.message }, { status: 500 })
-        }
-
-        // Transform comments data
-        const transformedComments = comments.map((comment: any) => ({
-            id: comment.id,
-            content: comment.content,
-            upvotes: comment.upvotes,
-            timestamp: new Date(comment.created_at).toLocaleString(),
-            author: {
-                name: comment.author?.full_name || 'Unknown',
-                username: comment.author?.username || 'unknown',
-                avatar: comment.author?.avatar_url || '/placeholder.svg'
-            },
-            isUpvoted: comment.user_vote && comment.user_vote.length > 0 && comment.user_vote[0].vote_type === 'up',
-            isDownvoted: comment.user_vote && comment.user_vote.length > 0 && comment.user_vote[0].vote_type === 'down'
-        }))
-
-        return NextResponse.json({ data: transformedComments })
-    } catch (error) {
-        console.error('Error in GET /api/comments:', error)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    } catch (error: any) {
+        console.error("Error in GET /api/comments:", error.message);
+        return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
     }
 }
 
+
 // POST /api/comments - Create a new comment
 export async function POST(request: NextRequest) {
+    const supabase = getSupabaseServerClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
-        const supabase = getSupabaseServerClient()
-
-        // Check authentication
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const body = await request.json()
-        const { postId, content } = body
-
+        const { postId, content } = await request.json();
         if (!postId || !content) {
-            return NextResponse.json({ error: 'Post ID and content are required' }, { status: 400 })
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        // Check if post exists
-        const { data: post, error: postError } = await supabase
-            .from('posts')
-            .select('id')
-            .eq('id', postId)
-            .single()
-
-        if (postError || !post) {
-            return NextResponse.json({ error: 'Post not found' }, { status: 404 })
-        }
-
-        // Create the comment
-        const { data: comment, error: commentError } = await supabase
-            .from('comments')
+        // Create the comment and fetch its details in one go
+        const { data: newComment, error } = await supabase
+            .from("comments")
             .insert({
                 post_id: postId,
+                content,
                 author_id: user.id,
-                content
             })
-            .select(`
-        *,
-        author:profiles(id, username, full_name, avatar_url, reputation)
-      `)
-            .single()
+            .select(
+                `
+                *,
+                author:profiles(id, username, full_name, avatar_url)
+            `
+            )
+            .single();
 
-        if (commentError) {
-            return NextResponse.json({ error: commentError.message }, { status: 500 })
-        }
+        if (error) throw error;
 
-        // Update comment count on the post
-        const { data: currentPost, error: fetchError } = await supabase
-            .from('posts')
-            .select('comment_count')
-            .eq('id', postId)
-            .single()
+        // ✅ FIX: Removed manual comment_count update.
+        // The database trigger you created handles this automatically and more reliably.
 
-        if (!fetchError && currentPost) {
-            const { error: updateError } = await supabase
-                .from('posts')
-                .update({ comment_count: currentPost.comment_count + 1 })
-                .eq('id', postId)
-
-            if (updateError) {
-                console.error('Error updating comment count:', updateError)
-            }
-        }
-
-        // Transform response
+        // Transform response to match the frontend's expected shape
         const response = {
-            id: comment.id,
-            content: comment.content,
-            upvotes: comment.upvotes,
-            timestamp: new Date(comment.created_at).toLocaleString(),
+            id: newComment.id,
+            content: newComment.content,
+            upvotes: newComment.upvotes,
+            timestamp: new Date(newComment.created_at).toLocaleString(),
             author: {
-                name: comment.author?.full_name || 'Unknown',
-                username: comment.author?.username || 'unknown',
-                avatar: comment.author?.avatar_url || '/placeholder.svg'
+                name: newComment.author?.full_name || 'Unknown',
+                username: newComment.author?.username || 'unknown',
+                avatar_url: newComment.author?.avatar_url || null
             },
-            isUpvoted: false,
+            isUpvoted: false, // A new comment by the user cannot be voted on by them yet
             isDownvoted: false
-        }
+        };
 
-        return NextResponse.json(response, { status: 201 })
-    } catch (error) {
-        console.error('Error in POST /api/comments:', error)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+        return NextResponse.json(response, { status: 201 });
+
+    } catch (error: any) {
+        console.error("Error in POST /api/comments:", error.message);
+        return NextResponse.json({ error: "Failed to create comment", details: error.message }, { status: 500 });
     }
 }

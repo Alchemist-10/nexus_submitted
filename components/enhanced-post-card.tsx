@@ -10,31 +10,29 @@ import { CardContent, CardHeader } from "@/components/ui/card"
 import { CardSpotlight } from "@/components/ui/card-spotlight"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { apiClient } from "@/lib/api"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CommentSection } from "@/components/comment-section"; // ✅ 1. Import the new component
 
 interface EnhancedPostCardProps {
   id: string;
   author: {
     name: string;
     username: string;
-    avatar: string;
+    avatar_url: string; // ✅ FIX: Use 'avatar' to match the corrected API response
   };
   content: string;
   timestamp: string;
   upvotes: number;
   commentCount: number;
-  tags: string[];
+  tags: string[] | null;
   isUpvoted?: boolean;
   isDownvoted?: boolean;
   images?: string[];
   postType?: string;
   title?: string;
   joinable?: boolean;
+  onVoteSuccess?: () => void;
 }
 
 export function EnhancedPostCard({
@@ -51,51 +49,63 @@ export function EnhancedPostCard({
   joinable = true,
   isUpvoted: initialIsUpvoted = false,
   isDownvoted: initialIsDownvoted = false,
+  onVoteSuccess
 }: EnhancedPostCardProps) {
-  const [isUpvotedState, setIsUpvoted] = useState(initialIsUpvoted);
+  const [isUpvoted, setIsUpvoted] = useState(initialIsUpvoted);
   const [isDownvoted, setIsDownvoted] = useState(initialIsDownvoted);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
   const [isVoting, setIsVoting] = useState(false);
+  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false); // ✅ 2. Add state to toggle the comment section
   const { toast } = useToast();
 
   useEffect(() => {
     setCurrentUpvotes(upvotes);
-  }, [upvotes]);
+    setIsUpvoted(initialIsUpvoted);
+    setIsDownvoted(initialIsDownvoted);
+  }, [upvotes, initialIsUpvoted, initialIsDownvoted]);
 
   const handleVote = async (voteType: 'up' | 'down') => {
-    // This is a placeholder. You should replace it with your actual API calls.
-    console.log(`Voting ${voteType} on post ${id}`);
+    if (isVoting) return;
+    setIsVoting(true);
+    const previousState = { upvotes: currentUpvotes, isUpvoted, isDownvoted };
+    const wasUpvoted = isUpvoted;
+    const wasDownvoted = isDownvoted;
+    let newUpvotes = currentUpvotes;
     if (voteType === 'up') {
-      const wasUpvoted = isUpvotedState;
-      const wasDownvoted = isDownvoted;
-      setCurrentUpvotes(currentUpvotes + (wasUpvoted ? -1 : (wasDownvoted ? 2 : 1)));
+      newUpvotes += wasUpvoted ? -1 : (wasDownvoted ? 2 : 1);
       setIsUpvoted(!wasUpvoted);
-      if (!wasUpvoted) setIsDownvoted(false);
+      setIsDownvoted(false);
     } else {
-      const wasUpvoted = isUpvotedState;
-      const wasDownvoted = isDownvoted;
-      setCurrentUpvotes(currentUpvotes + (wasDownvoted ? 1 : (wasUpvoted ? -2 : -1)));
+      newUpvotes += wasDownvoted ? 1 : (wasUpvoted ? -2 : -1);
       setIsDownvoted(!wasDownvoted);
-      if (!wasDownvoted) setIsUpvoted(false);
+      setIsUpvoted(false);
+    }
+    setCurrentUpvotes(newUpvotes);
+    try {
+      const isRemovingVote = (voteType === 'up' && wasUpvoted) || (voteType === 'down' && wasDownvoted);
+      if (isRemovingVote) {
+        await apiClient.removeVote(id);
+      } else {
+        await apiClient.votePost(id, voteType);
+      }
+      if (onVoteSuccess) onVoteSuccess(); // This will trigger a refetch to update comment counts
+    } catch (error) {
+      toast({ title: "Vote failed", description: "Could not save your vote.", variant: "destructive" });
+      setCurrentUpvotes(previousState.upvotes);
+      setIsUpvoted(previousState.isUpvoted);
+      setIsDownvoted(previousState.isDownvoted);
+    } finally {
+      setIsVoting(false);
     }
   };
 
   const getPostTypeColor = (type: string) => {
-    const colors = {
-      Project: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      Academic: "bg-green-500/10 text-green-500 border-green-500/20",
-      Guidance: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      Announcement: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-      Question: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      Misc: "bg-red-500/10 text-red-500 border-red-500/20",
-    };
+    const colors = { Project: "bg-blue-500/10 text-blue-500 border-blue-500/20", Academic: "bg-green-500/10 text-green-500 border-green-500/20", Guidance: "bg-purple-500/10 text-purple-500 border-purple-500/20", Announcement: "bg-orange-500/10 text-orange-500 border-orange-500/20", Question: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", Misc: "bg-red-500/10 text-red-500 border-red-500/20" };
     return colors[type as keyof typeof colors] || colors.Misc;
   };
 
   const UPVOTE_THRESHOLD = 3;
-
-  // FIX: Provide a default author object to prevent crashes if the prop is not ready
   const safeAuthor = author || { name: "Anonymous", username: "unknown", avatar: "" };
 
   return (
@@ -104,9 +114,8 @@ export function EnhancedPostCard({
         <div className="flex items-start justify-between space-x-4">
           <div className="flex items-center space-x-3 min-w-0">
             <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-primary/20">
-              <AvatarImage src={safeAuthor.avatar || "/placeholder.svg"} alt={safeAuthor.name} />
+              <AvatarImage src={safeAuthor.avatar_url || "/placeholder.svg"} alt={safeAuthor.name} />
               <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                {/* FIX: Use the safe author name and add a check for the name itself */}
                 {(safeAuthor.name || 'A').split(" ").map((n) => n[0]).join("")}
               </AvatarFallback>
             </Avatar>
@@ -120,9 +129,7 @@ export function EnhancedPostCard({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-50 group-hover:opacity-100 flex-shrink-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-50 group-hover:opacity-100 flex-shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem>Report Post</DropdownMenuItem>
@@ -148,7 +155,7 @@ export function EnhancedPostCard({
         )}
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map((tag, index) => (
+          {(tags || []).map((tag, index) => (
             <Badge key={tag} variant="secondary" className="text-xs nexus-tag" style={{ animationDelay: `${index * 50}ms` }}>#{tag}</Badge>
           ))}
         </div>
@@ -156,11 +163,12 @@ export function EnhancedPostCard({
         <div className="flex items-center justify-between pt-3 border-t border-border/50">
           <div className="flex items-center space-x-1 sm:space-x-2">
             <div className="flex items-center bg-muted/50 rounded-lg p-1 backdrop-blur-sm">
-              <Button variant="ghost" size="sm" onClick={() => handleVote('up')} disabled={isVoting} className={`h-8 w-8 p-0 ${isUpvotedState ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><ArrowUp className={`h-4 w-4 ${isUpvotedState ? "scale-110" : ""}`} /></Button>
+              <Button variant="ghost" size="sm" onClick={() => handleVote('up')} disabled={isVoting} className={`h-8 w-8 p-0 ${isUpvoted ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><ArrowUp className={`h-4 w-4 ${isUpvoted ? "scale-110" : ""}`} /></Button>
               <span className="text-sm font-medium px-2 min-w-[2rem] text-center font-mono">{currentUpvotes}</span>
               <Button variant="ghost" size="sm" onClick={() => handleVote('down')} disabled={isVoting} className={`h-8 w-8 p-0 ${isDownvoted ? "text-destructive bg-destructive/20" : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"}`}><ArrowDown className={`h-4 w-4 ${isDownvoted ? "scale-110" : ""}`} /></Button>
             </div>
-            <Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-primary">
+            {/* ✅ 3. Add onClick handler to the comment button */}
+            <Button variant="ghost" size="sm" onClick={() => setIsCommentSectionOpen(!isCommentSectionOpen)} className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-primary">
               <MessageCircle className="h-4 w-4 mr-1" />
               <span className="text-xs font-medium font-mono">{commentCount}</span>
             </Button>
@@ -169,18 +177,19 @@ export function EnhancedPostCard({
             {joinable && currentUpvotes >= UPVOTE_THRESHOLD && (
               <Link href={`/join/${id}`} passHref>
                 <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
-                  <UserPlus className="h-4 w-4 mr-2"/>
+                  <UserPlus className="h-4 w-4 mr-2" />
                   Join
                 </Button>
               </Link>
             )}
-            
             <Button variant="ghost" size="sm" onClick={() => setIsBookmarked(!isBookmarked)} className={`h-8 w-8 p-0 ${isBookmarked ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current scale-110" : ""}`} /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"><Share2 className="h-4 w-4" /></Button>
           </div>
         </div>
+
+        {/* ✅ 4. Conditionally render the new comment section */}
+        {isCommentSectionOpen && <CommentSection postId={id} />}
       </CardContent>
     </CardSpotlight>
   );
 }
-

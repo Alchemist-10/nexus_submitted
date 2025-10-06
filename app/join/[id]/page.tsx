@@ -14,9 +14,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 const availableLocations = ["MilmaLab", "TT Lab", "Huts", "304", "204", "404", "Library", "Amphitheatre"];
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+// ✅ FIX: Calculate the 'to' date based on the zeroed-out 'today' date for consistency.
+const toDate = new Date(today);
+toDate.setDate(toDate.getDate() + 14);
+
 const authorTimeRange = {
-    from: new Date(),
-    to: new Date(new Date().setDate(new Date().getDate() + 14)) // Allow selections for the next 14 days
+    from: today,
+    to: toDate
 };
 
 export default function JoinSessionPage() {
@@ -27,63 +35,36 @@ export default function JoinSessionPage() {
 
     const [mode, setMode] = useState("online");
     const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-    const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
+    const [selectedDates, setSelectedDates] = useState<Date[] | undefined>(undefined);
+
     const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
-    // ✅ MERGED: Replaced placeholder with full backend logic
     const handleSubmit = async () => {
-        // --- Validation ---
         if (!selectedDates || selectedDates.length === 0 || selectedTimes.length === 0) {
-            toast({
-                title: "Incomplete Form",
-                description: "Please select at least one date and one time slot.",
-                variant: "destructive",
-            });
+            toast({ title: "Incomplete Form", description: "Please select at least one date and one time slot.", variant: "destructive" });
             return;
         }
         if (mode === 'offline' && selectedLocations.length === 0) {
-            toast({
-                title: "Incomplete Form",
-                description: "Please select at least one location for an offline session.",
-                variant: "destructive",
-            });
+            toast({ title: "Incomplete Form", description: "Please select at least one location for an offline session.", variant: "destructive" });
             return;
         }
 
         setSubmitting(true);
 
-        // --- Payload Construction ---
         const payload = {
             mode,
-            selectedDates: selectedDates.map(d => {
-                // Convert Date to ISO date string 'YYYY-MM-DD' expected by the database
-                return d.toISOString().slice(0, 10);
-            }),
+            selectedDates: selectedDates.map(d => d.toISOString().slice(0, 10)),
             selectedTimeSlots: selectedTimes,
-            // Send the first selected location, or null if online/none selected
             chosenLocation: mode === 'offline' ? (selectedLocations[0] ?? null) : null
         };
 
         try {
-            // --- API Call ---
             await apiClient.createSessionProposal(postId, payload);
-
-            toast({
-                title: "Success!",
-                description: "Your availability has been submitted to the post author.",
-            });
-
-            // Redirect user back to the post page on success
+            toast({ title: "Success!", description: "Your availability has been submitted." });
             router.push(`/post/${postId}`);
-
         } catch (e: any) {
-            console.error(e);
-            toast({
-                title: "Submission Failed",
-                description: e.message || "An unexpected error occurred.",
-                variant: "destructive",
-            });
+            toast({ title: "Submission Failed", description: e.message || "An unexpected error occurred.", variant: "destructive" });
         } finally {
             setSubmitting(false);
         }
@@ -112,7 +93,7 @@ export default function JoinSessionPage() {
                             {mode === 'offline' && (
                                 <div className="mt-6 border-t border-border/50 pt-6 animate-in fade-in-50">
                                     <Label className="font-semibold text-base">Choose Preferred Locations</Label>
-                                    <p className="text-sm text-muted-foreground mb-4">You can select multiple places you're willing to meet.</p>
+                                    <p className="text-sm text-muted-foreground mb-4">You can select one or more places you're willing to meet.</p>
                                     <ToggleGroup type="multiple" variant="outline" className="flex-wrap justify-start gap-2" value={selectedLocations} onValueChange={(value) => setSelectedLocations(value)}>
                                         {availableLocations.map(loc => (
                                             <ToggleGroupItem key={loc} value={loc} className="h-10 px-4">{loc}</ToggleGroupItem>
@@ -166,3 +147,4 @@ export default function JoinSessionPage() {
         </div>
     );
 }
+

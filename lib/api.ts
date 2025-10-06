@@ -201,6 +201,18 @@ class ApiClient {
             method: 'DELETE'
         });
     }
+    async createSessionProposal(postId: string, payload: {
+        mode: string;
+        selectedDates: string[];
+        selectedTimeSlots: string[];
+        chosenLocation: string | null;
+    }): Promise<any> {
+        return this.request(`/posts/${postId}/session-proposals`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    }
+
 }
 
 export const apiClient = new ApiClient()

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Navigation } from "@/components/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -8,33 +9,84 @@ import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import type { DateRange } from "react-day-picker";
+import { apiClient } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
-// Mock data based on your PDF. In a real app, you would fetch this based on the post ID from params.id.
 const availableLocations = ["MilmaLab", "TT Lab", "Huts", "304", "204", "404", "Library", "Amphitheatre"];
 const authorTimeRange = {
-    from: new Date(), // For this demo, we'll start from today
-    to: new Date(new Date().setDate(new Date().getDate() + 7)) // And end 7 days from now
+    from: new Date(),
+    to: new Date(new Date().setDate(new Date().getDate() + 14)) // Allow selections for the next 14 days
 };
 
-export default function JoinSessionPage({ params }: { params: { id: string } }) {
+export default function JoinSessionPage() {
+    const params = useParams();
+    const router = useRouter();
+    const { toast } = useToast();
+    const postId = params.id as string;
+
     const [mode, setMode] = useState("online");
     const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
     const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
     const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = () => {
-        // Here you would submit the user's availability to your backend.
-        // You would also handle the Google Calendar integration on the backend
-        // after finding the optimal time slot.
-        console.log({
-            postId: params.id,
+    // ✅ MERGED: Replaced placeholder with full backend logic
+    const handleSubmit = async () => {
+        // --- Validation ---
+        if (!selectedDates || selectedDates.length === 0 || selectedTimes.length === 0) {
+            toast({
+                title: "Incomplete Form",
+                description: "Please select at least one date and one time slot.",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (mode === 'offline' && selectedLocations.length === 0) {
+            toast({
+                title: "Incomplete Form",
+                description: "Please select at least one location for an offline session.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setSubmitting(true);
+
+        // --- Payload Construction ---
+        const payload = {
             mode,
-            locations: mode === 'offline' ? selectedLocations : [],
-            dates: selectedDates,
-            times: selectedTimes
-        });
-        alert("Your availability has been submitted!");
+            selectedDates: selectedDates.map(d => {
+                // Convert Date to ISO date string 'YYYY-MM-DD' expected by the database
+                return d.toISOString().slice(0, 10);
+            }),
+            selectedTimeSlots: selectedTimes,
+            // Send the first selected location, or null if online/none selected
+            chosenLocation: mode === 'offline' ? (selectedLocations[0] ?? null) : null
+        };
+
+        try {
+            // --- API Call ---
+            await apiClient.createSessionProposal(postId, payload);
+
+            toast({
+                title: "Success!",
+                description: "Your availability has been submitted to the post author.",
+            });
+
+            // Redirect user back to the post page on success
+            router.push(`/post/${postId}`);
+
+        } catch (e: any) {
+            console.error(e);
+            toast({
+                title: "Submission Failed",
+                description: e.message || "An unexpected error occurred.",
+                variant: "destructive",
+            });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -49,19 +101,16 @@ export default function JoinSessionPage({ params }: { params: { id: string } }) 
                         <p className="text-muted-foreground mt-2">Select your availability and preferred mode to join the session.</p>
                     </div>
 
-                    {/* Mode Selection Card */}
                     <Card className="nexus-card bg-card/80 backdrop-blur-md border-border/50">
-                        <CardHeader>
-                            <CardTitle>1. Select Your Preferred Mode</CardTitle>
-                        </CardHeader>
+                        <CardHeader><CardTitle>1. Select Your Preferred Mode</CardTitle></CardHeader>
                         <CardContent>
-                            <RadioGroup defaultValue="online" value={mode} onValueChange={setMode} className="mb-4">
+                            <RadioGroup value={mode} onValueChange={setMode} className="mb-4">
                                 <div className="flex items-center space-x-2"><RadioGroupItem value="online" id="online" /><Label htmlFor="online">Online (Google Meet)</Label></div>
                                 <div className="flex items-center space-x-2"><RadioGroupItem value="offline" id="offline" /><Label htmlFor="offline">Offline (On Campus)</Label></div>
                             </RadioGroup>
 
                             {mode === 'offline' && (
-                                <div className="mt-6 border-t border-border/50 pt-6">
+                                <div className="mt-6 border-t border-border/50 pt-6 animate-in fade-in-50">
                                     <Label className="font-semibold text-base">Choose Preferred Locations</Label>
                                     <p className="text-sm text-muted-foreground mb-4">You can select multiple places you're willing to meet.</p>
                                     <ToggleGroup type="multiple" variant="outline" className="flex-wrap justify-start gap-2" value={selectedLocations} onValueChange={(value) => setSelectedLocations(value)}>
@@ -74,12 +123,11 @@ export default function JoinSessionPage({ params }: { params: { id: string } }) 
                         </CardContent>
                     </Card>
 
-                    {/* Interval Selection Card */}
                     <Card className="nexus-card bg-card/80 backdrop-blur-md border-border/50">
                         <CardHeader>
                             <CardTitle>2. Select Your Available Intervals</CardTitle>
                             <CardDescription>
-                                The session will be scheduled between {authorTimeRange.from.toLocaleDateString()} and {authorTimeRange.to.toLocaleDateString()}.
+                                The session will be scheduled within the next two weeks.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col lg:flex-row gap-8 items-start">
@@ -108,7 +156,8 @@ export default function JoinSessionPage({ params }: { params: { id: string } }) 
                     </Card>
 
                     <div className="flex justify-end">
-                        <Button size="lg" className="nexus-glow text-lg py-6 px-8" onClick={handleSubmit}>
+                        <Button size="lg" className="nexus-glow text-lg py-6 px-8" onClick={handleSubmit} disabled={submitting}>
+                            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Submit Availability
                         </Button>
                     </div>

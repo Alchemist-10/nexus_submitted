@@ -65,30 +65,38 @@ class ApiClient {
 
     // --- OTHER METHODS (UNCHANGED) ---
 
-    async getPosts(params?: {
-        page?: number
-        limit?: number
-        sortBy?: string
-        order?: 'asc' | 'desc'
-        tag?: string
-        postType?: string
-        search?: string
-        feed?: 'timeline' | 'merged' | 'engaged' | 'relevance'
-    }): Promise<PaginatedResponse<Post>> {
-        const searchParams = new URLSearchParams()
+    async getPosts(params: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    feed?: 'timeline' | 'merged' | 'engaged' | 'relevance';
+    // New filter types
+    search?: string;
+    postTypes?: string[];
+    tags?: string[];
+    batches?: string[];
+    semesters?: string[];
+  }): Promise<{ data: Post[] }> {
+    const searchParams = new URLSearchParams();
 
-        if (params?.page) searchParams.set('page', params.page.toString())
-        if (params?.limit) searchParams.set('limit', params.limit.toString())
-        if (params?.sortBy) searchParams.set('sortBy', params.sortBy)
-        if (params?.order) searchParams.set('order', params.order)
-        if (params?.tag) searchParams.set('tag', params.tag)
-        if (params?.postType) searchParams.set('postType', params.postType)
-        if (params?.search) searchParams.set('search', params.search)
-        if (params?.feed) searchParams.set('feed', params.feed)
+    // Standard params
+    if (params.page) searchParams.set('page', params.page.toString());
+    if (params.limit) searchParams.set('limit', params.limit.toString());
+    if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+    if (params.order) searchParams.set('order', params.order);
+    if (params.feed) searchParams.set('feed', params.feed);
 
-        const queryString = searchParams.toString()
-        return this.request<PaginatedResponse<Post>>(`/posts${queryString ? `?${queryString}` : ''}`)
-    }
+    // New filter params (serialize arrays to comma-separated strings)
+    if (params.search) searchParams.set('search', params.search);
+    if (params.postTypes && params.postTypes.length > 0) searchParams.set('postTypes', params.postTypes.join(','));
+    if (params.tags && params.tags.length > 0) searchParams.set('tags', params.tags.join(','));
+    if (params.batches && params.batches.length > 0) searchParams.set('batches', params.batches.join(','));
+    if (params.semesters && params.semesters.length > 0) searchParams.set('semesters', params.semesters.join(','));
+
+    const queryString = searchParams.toString();
+    return this.request<{ data: Post[] }>(`/posts?${queryString}`);
+  }
 
     async getPost(id: string): Promise<Post> {
         return this.request<Post>(`/posts/${id}`)

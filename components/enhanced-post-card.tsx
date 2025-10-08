@@ -124,7 +124,7 @@ export function EnhancedPostCard({
                 <h3 className="font-semibold text-sm break-all">{safeAuthor.name}</h3>
                 <Badge variant="outline" className={`text-xs ${getPostTypeColor(postType)}`}>{postType}</Badge>
               </div>
-              <p className="text-xs text-muted-foreground break-all">@{safeAuthor.username} • {timestamp}</p>
+              <p className="text-xs text-muted-foreground break-all">@{safeAuthor.username} • {timestamp.toLocaleLowerCase()}</p>
             </div>
           </div>
           <DropdownMenu>

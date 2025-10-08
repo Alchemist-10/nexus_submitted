@@ -45,10 +45,13 @@ interface FilterState {
 
 interface AdvancedFilterModalProps {
   onFiltersChange: (filters: {
+    postTypes?: string[]
     tags?: string[]
-    postType?: string
+    batches?: string[]
+    semesters?: string[]
   }) => void
 }
+
 
 export function AdvancedFilterModal({ onFiltersChange }: AdvancedFilterModalProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -81,10 +84,14 @@ export function AdvancedFilterModal({ onFiltersChange }: AdvancedFilterModalProp
     const selectedTags = filters.tags.length > 0 ? filters.tags : undefined
     const selectedPostType = filters.types.length > 0 ? filters.types[0] : undefined
 
-    onFiltersChange({
-      tags: selectedTags,
-      postType: selectedPostType
-    })
+  onFiltersChange({
+  postTypes: filters.types.length > 0 ? filters.types : undefined,
+  tags: filters.tags.length > 0 ? filters.tags : undefined,
+  batches: filters.batches.length > 0 ? filters.batches : undefined,
+  semesters: filters.semesters.length > 0 ? filters.semesters : undefined,
+})
+
+
     console.log("[v0] Applying filters:", { tags: selectedTags, postType: selectedPostType })
     setIsOpen(false)
   }

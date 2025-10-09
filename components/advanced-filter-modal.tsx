@@ -33,7 +33,7 @@ const availableTags = [
   "Algorithms",
   "Research",
 ]
-const batches = ["2025", "2026", "2027", "2028"]
+const batches = ["1", "2", "3", "4"]
 const semesters = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
 
 interface FilterState {
@@ -226,7 +226,7 @@ export function AdvancedFilterModal({ onFiltersChange }: AdvancedFilterModalProp
                         htmlFor={`batch-${batch}`}
                         className="text-sm cursor-pointer hover:text-primary transition-colors"
                       >
-                        Class of {batch}
+                        Batch: {batch}
                       </Label>
                     </div>
                   ))}

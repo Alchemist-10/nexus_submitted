@@ -1,3 +1,4 @@
+"use client"; 
 import { useState } from "react"
 import { ArrowUp, ArrowDown, Reply } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

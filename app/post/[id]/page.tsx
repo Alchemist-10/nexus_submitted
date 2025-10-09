@@ -1,141 +1,218 @@
-import { Navigation } from "@/components/navigation"
-import { TagPill } from "@/components/tag-pill"
-import { Comment } from "@/components/comment"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowUp, MessageCircle, Share, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+// app/post/[id]/page.tsx
+import React from "react";
+import { notFound } from "next/navigation";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { EnhancedPostCard } from "@/components/enhanced-post-card"; // named import (matches your export)
 
-// Mock data for the post and comments
-const mockPost = {
-  id: "1",
-  author: { name: "Alex Chen", avatar: "/placeholder.svg?height=40&width=40" },
-  content:
-    "Just discovered this amazing new algorithm for optimizing neural networks. The performance improvements are incredible! I've been working on this for months and finally got breakthrough results. The key insight was to use adaptive learning rates combined with momentum-based optimization. Here's what I found...",
-  timestamp: "2h ago",
-  upvotes: 42,
-  commentCount: 8,
-  tags: ["AI/ML", "Algorithms", "Research"],
-  isUpvoted: true,
-}
+type Params = { id: string };
 
-const mockComments = [
-  {
-    author: { name: "Sarah Kim", avatar: "/placeholder.svg?height=32&width=32" },
-    content: "This is fascinating! Could you share more details about the adaptive learning rate implementation?",
-    timestamp: "1h ago",
-    upvotes: 12,
-    isUpvoted: false,
-  },
-  {
-    author: { name: "Marcus Johnson", avatar: "/placeholder.svg?height=32&width=32" },
-    content:
-      "Great work! I've been struggling with similar optimization problems. Would love to see the code if you're willing to share.",
-    timestamp: "45m ago",
-    upvotes: 8,
-    isUpvoted: true,
-  },
-  {
-    author: { name: "Emily Rodriguez", avatar: "/placeholder.svg?height=32&width=32" },
-    content: "Have you compared this with Adam optimizer? I'm curious about the performance differences.",
-    timestamp: "30m ago",
-    upvotes: 5,
-    isUpvoted: false,
-  },
-]
+export default async function Page({ params }: { params: Params }) {
+  const idRaw = params.id ?? "";
+  const id = decodeURIComponent(idRaw || "");
 
-export default function ThreadPage({ params }: { params: { id: string } }) {
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+  const supabase = getSupabaseServerClient();
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
-          <Link
-            href="/"
-            className="inline-flex items-center space-x-2 text-muted-foreground hover:text-primary mb-6 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Timeline</span>
-          </Link>
+  try {
+    // 1) Try exact username match (fast path)
+    const userRes = await supabase
+      .from("profiles")
+      .select("id, username, full_name, bio, avatar_url")
+      .eq("username", id)
+      .limit(1)
+      .maybeSingle();
 
-          {/* Main Post */}
-          <Card className="nexus-card p-6 mb-8">
-            <div className="flex items-start space-x-4">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={mockPost.author.avatar || "/placeholder.svg"} alt={mockPost.author.name} />
-                <AvatarFallback className="bg-muted">{mockPost.author.name.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
+    if (userRes.error) console.error("profiles query error:", userRes.error);
+    const user: any = userRes.data ?? null;
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="font-semibold text-foreground">{mockPost.author.name}</span>
-                  <span className="text-muted-foreground text-sm">•</span>
-                  <span className="text-muted-foreground text-sm">{mockPost.timestamp}</span>
-                </div>
+    if (user) {
+      // fetch recent posts by this user (optional)
+      const postsRes = await supabase
+        .from("posts")
+        .select("id, title, content, created_at")
+        .eq("author_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-                <p className="text-foreground mb-6 leading-relaxed">{mockPost.content}</p>
+      const posts = postsRes.data ?? [];
 
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {mockPost.tags.map((tag) => (
-                    <TagPill key={tag}>{tag}</TagPill>
-                  ))}
-                </div>
-
-                <div className="flex items-center space-x-6">
-                  <Button
-                    variant="ghost"
-                    className={`flex items-center space-x-2 ${mockPost.isUpvoted ? "text-secondary" : "text-muted-foreground"
-                      } hover:text-secondary`}
-                  >
-                    <ArrowUp className="h-5 w-5" />
-                    <span className="font-medium">{mockPost.upvotes}</span>
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    className="flex items-center space-x-2 text-muted-foreground hover:text-primary"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                    <span>{mockPost.commentCount}</span>
-                  </Button>
-
-                  <Button variant="ghost" className="text-muted-foreground hover:text-primary">
-                    <Share className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
+      return (
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={user.avatar_url ?? undefined} />
+              <AvatarFallback>
+                {user.full_name?.split(" ").map((n: string) => n[0]).join("")}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold">{user.full_name}</h1>
+              <p className="text-sm text-muted-foreground">@{user.username}</p>
+              {user.bio && <p className="mt-2 text-sm">{user.bio}</p>}
             </div>
-          </Card>
+          </div>
 
-          {/* Comment Form */}
-          <Card className="nexus-card p-6 mb-8">
-            <div className="flex space-x-4">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="You" />
-                <AvatarFallback className="bg-muted">U</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <Textarea placeholder="Write a comment..." className="mb-4 min-h-[100px] resize-none" />
-                <div className="flex justify-end">
-                  <Button>Post Comment</Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Comments */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-foreground">Comments ({mockComments.length})</h3>
-
-            {mockComments.map((comment, index) => (
-              <Comment key={index} {...comment} />
-            ))}
+          <h2 className="text-lg font-semibold mb-3">Recent posts</h2>
+          <div className="space-y-3">
+            {posts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No posts yet.</p>
+            ) : (
+              posts.map((p: any) => (
+                <Card key={p.id} className="p-4">
+                  <Link href={`/post/${p.id}`} className="block">
+                    <h3 className="font-medium">{p.title}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{p.content}</p>
+                    <div className="text-xs text-muted-foreground mt-2">{new Date(p.created_at).toLocaleString()}</div>
+                  </Link>
+                </Card>
+              ))
+            )}
           </div>
         </div>
-      </main>
-    </div>
-  )
+      );
+    }
+
+    // 2) Try tag by name
+    const tagRes = await supabase
+      .from("tags")
+      .select("id, name, description, post_count")
+      .eq("name", id)
+      .limit(1)
+      .maybeSingle();
+
+    if (tagRes.error) console.error("tags query error:", tagRes.error);
+    const tag: any = tagRes.data ?? null;
+    if (tag) {
+      return (
+        <div className="max-w-3xl mx-auto p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">#{tag.name}</h1>
+              {tag.description && <p className="text-sm text-muted-foreground mt-1">{tag.description}</p>}
+            </div>
+            <Badge variant="outline">{tag.post_count ?? 0} posts</Badge>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            Preview of posts for this tag is not enabled in this demo. Implement a posts query for this tag if you store post-tag relations.
+          </p>
+        </div>
+      );
+    }
+
+    // 3) Try post by id (assuming posts use id slug/uuid)
+    const postRes = await supabase
+      .from("posts")
+      .select(
+        `id,
+         title,
+         content,
+         created_at,
+         upvotes,
+         images,
+         post_type,
+         joinable,
+         tags,
+         author:profiles(id, username, full_name, avatar_url)`
+      )
+      .eq("id", id)
+      .limit(1)
+      .maybeSingle();
+
+    if (postRes.error) console.error("posts query error:", postRes.error);
+    const post: any = postRes.data ?? null;
+    if (post) {
+      // Safely handle author field which may be an object or array
+      let authorObj: any = null;
+      if (post.author) {
+        authorObj = Array.isArray(post.author) ? post.author[0] : post.author;
+      }
+
+      const commentsRes = await supabase
+        .from("comments")
+        .select("id", { count: "exact", head: false })
+        .eq("post_id", id);
+
+      const commentCount = typeof commentsRes.count === "number" ? commentsRes.count : commentsRes.data?.length ?? 0;
+
+      let upvoteCount = typeof post.upvotes === "number" ? post.upvotes : 0;
+      if (!upvoteCount) {
+        const votesRes = await supabase
+          .from("votes")
+          .select("id", { count: "exact", head: false })
+          .eq("post_id", id)
+          .eq("vote", "up"); // adapt if your schema differs
+        upvoteCount = typeof votesRes.count === "number" ? votesRes.count : upvoteCount;
+      }
+
+      const authorSafe = authorObj ?? { username: "unknown", full_name: "Unknown", avatar_url: "" };
+
+      const images: string[] = Array.isArray(post.images) ? post.images : (post.images ? [String(post.images)] : []);
+      const tags: string[] = Array.isArray(post.tags) ? post.tags : (post.tags ? String(post.tags).split(",").map((t: string) => t.trim()).filter(Boolean) : []);
+
+      const enhancedProps = {
+        id: post.id,
+        author: {
+          name: authorSafe.full_name ?? authorSafe.username,
+          username: authorSafe.username,
+          avatar_url: authorSafe.avatar_url ?? "",
+        },
+        content: post.content ?? "",
+        timestamp: post.created_at ? new Date(post.created_at).toLocaleString() : "",
+        upvotes: upvoteCount ?? 0,
+        commentCount: commentCount ?? 0,
+        tags,
+        isUpvoted: false,
+        isDownvoted: false,
+        images,
+        postType: post.post_type ?? "Misc",
+        title: post.title ?? "",
+        joinable: Boolean(post.joinable ?? false),
+      };
+
+      return (
+        <div className="max-w-3xl mx-auto p-6">
+          <EnhancedPostCard {...enhancedProps} />
+        </div>
+      );
+    }
+
+    // 4) Try case-insensitive username fallback:
+    const idLower = id.toLowerCase();
+    const userRes2 = await supabase
+      .from("profiles")
+      .select("id, username, full_name, bio, avatar_url")
+      .eq("username", idLower)
+      .limit(1)
+      .maybeSingle();
+
+    if (!userRes2.error && userRes2.data) {
+      const user2: any = userRes2.data;
+      return (
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={user2.avatar_url ?? undefined} />
+              <AvatarFallback>{user2.full_name?.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold">{user2.full_name}</h1>
+              <p className="text-sm text-muted-foreground">@{user2.username}</p>
+              {user2.bio && <p className="mt-2 text-sm">{user2.bio}</p>}
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">No recent posts preview in this fallback.</p>
+        </div>
+      );
+    }
+
+    // Nothing matched
+    notFound();
+  } catch (err) {
+    console.error("Error resolving id page:", err);
+    notFound();
+  }
 }

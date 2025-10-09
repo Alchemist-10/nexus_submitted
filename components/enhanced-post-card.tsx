@@ -121,10 +121,10 @@ export function EnhancedPostCard({
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <h3 className="font-semibold text-sm break-all">{safeAuthor.name}</h3>
+                <h3 className="font-semibold text-sm break-all">{safeAuthor.username}</h3>
                 <Badge variant="outline" className={`text-xs ${getPostTypeColor(postType)}`}>{postType}</Badge>
               </div>
-              <p className="text-xs text-muted-foreground break-all">@{safeAuthor.username} • {timestamp.toLocaleLowerCase()}</p>
+              <p className="text-xs text-muted-foreground break-all">@{safeAuthor.username} • {timestamp}</p>
             </div>
           </div>
           <DropdownMenu>

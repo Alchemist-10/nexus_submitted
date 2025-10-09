@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at";
     const order = searchParams.get("order") || "desc";
     
-    // New and updated filters that can accept multiple values
     const search = searchParams.get("search");
     const postTypes = searchParams.get("postTypes")?.split(',');
     const tags = searchParams.get("tags")?.split(',');
@@ -27,7 +26,6 @@ export async function GET(request: NextRequest) {
 
     try {
         // --- Base Query ---
-        // The join to profiles is now INNER to allow filtering on author properties
         let query = supabase
             .from("posts")
             .select(
@@ -39,8 +37,26 @@ export async function GET(request: NextRequest) {
             )
             .order(sortBy, { ascending: order === "asc" });
 
-        // --- Apply Feed Logic (runs before other filters) ---
-        if (feedType === "merged") {
+        // --- Apply Feed Logic ---
+        if (feedType === "relevance") {
+            // ✅ FIX: Implemented Relevance feed logic
+            const { data: profile } = await supabase.from("profiles").select("interests").eq("id", user.id).single();
+            const interests = profile?.interests || [];
+            if (interests.length > 0) {
+                query = query.overlaps("tags", interests);
+            } else {
+                return NextResponse.json({ data: [] }); // No interests, so no relevant posts
+            }
+        } else if (feedType === "engaged") {
+            // ✅ FIX: Implemented Engaged feed logic
+            const { data: postIds, error } = await supabase.rpc("get_engaged_post_ids", { user_id_input: user.id });
+            if (error) throw error;
+            if (postIds && postIds.length > 0) {
+                query = query.in("id", postIds.map((item: any) => item.id));
+            } else {
+                return NextResponse.json({ data: [] }); // No engaged posts
+            }
+        } else if (feedType === "merged") {
             const { data: friendIds } = await supabase.rpc("get_friend_ids", { user_id_input: user.id });
             if (friendIds && friendIds.length > 0) {
                 query = query.in("author_id", friendIds.map((item: any) => item.id));
@@ -48,7 +64,7 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ data: [] });
             }
         }
-        // ... (other feed logic like 'relevance' and 'engaged' can be added here) ...
+        // "timeline" is the default and requires no special filters.
 
         // --- Apply Advanced Filters ---
         if (search) {
@@ -58,7 +74,7 @@ export async function GET(request: NextRequest) {
             query = query.in("post_type", postTypes);
         }
         if (tags && tags.length > 0) {
-            query = query.overlaps("tags", tags); // Use 'overlaps' for array columns
+            query = query.overlaps("tags", tags);
         }
         if (batches && batches.length > 0) {
             query = query.in("author.batch", batches);
@@ -144,3 +160,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create post", details: error.message }, { status: 500 });
     }
 }
+

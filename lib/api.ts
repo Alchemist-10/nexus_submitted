@@ -209,6 +209,15 @@ class ApiClient {
             method: 'DELETE'
         });
     }
+    async autocomplete(params: { q: string; limit?: number }) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("q", params.q);
+  if (params.limit) searchParams.set("limit", String(params.limit));
+  return this.request<{ suggestions: Array<{ type: string; id?: string; value: string }> }>(
+    `/autocomplete?${searchParams.toString()}`
+  );
+}
+
     async createSessionProposal(postId: string, payload: {
         mode: string;
         selectedDates: string[];

@@ -1,93 +1,85 @@
 // app/api/posts/[id]/session-proposals/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
-// Use your existing server client helper
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-    // Use 'id' from params to match your folder name '[id]'
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const supabase = getSupabaseServerClient();
+  try {
     const postId = params.id;
+    const { data: proposals, error } = await supabase
+      .from("session_proposals")
+      .select(`
+        id,
+        post_id,
+        proposer_id,
+        mode,
+        selected_dates,
+        selected_time_slots,
+        chosen_location,
+        status,
+        created_at,
+        updated_at,
+        proposer:profiles!inner(id, username, full_name, avatar_url)
+      `)
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
 
-    // Use your existing helper to get the client and user
-    const supabase = getSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    if (error) throw error;
+    return NextResponse.json({ data: proposals });
+  } catch (err: any) {
+    console.error("GET /session-proposals error:", err);
+    return NextResponse.json({ error: "Failed to fetch session proposals", details: err.message }, { status: 500 });
+  }
+}
 
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const supabase = getSupabaseServerClient();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    const body = await req.json();
+  try {
+    const postId = params.id;
+    const body = await request.json();
     const { mode, selectedDates, selectedTimeSlots, chosenLocation } = body;
 
-    // Input validation
-    if (!Array.isArray(selectedDates) || selectedDates.length === 0 || !Array.isArray(selectedTimeSlots) || selectedTimeSlots.length === 0) {
-        return NextResponse.json({ error: "Invalid payload: Dates and time slots are required." }, { status: 400 });
+    if (!mode || !Array.isArray(selectedDates) || selectedDates.length === 0 || !Array.isArray(selectedTimeSlots) || selectedTimeSlots.length === 0) {
+      return NextResponse.json({ error: "Invalid payload. Provide mode, selectedDates and selectedTimeSlots." }, { status: 400 });
     }
 
-    try {
-        // 1) Ensure the post exists and has >= 2 upvotes
-        const { data: post, error: postError } = await supabase
-            .from("posts")
-            .select("id, author_id, upvotes")
-            .eq("id", postId)
-            .single();
+    const insertPayload = {
+      post_id: postId,
+      proposer_id: user.id,
+      mode,
+      selected_dates: selectedDates,
+      selected_time_slots: selectedTimeSlots,
+      chosen_location: chosenLocation ?? null,
+      status: "pending",
+    };
 
-        if (postError || !post) {
-            return NextResponse.json({ error: "Post not found" }, { status: 404 });
-        }
-        if ((post.upvotes ?? 0) < 2) {
-            return NextResponse.json({ error: "This post does not have enough upvotes to open proposals" }, { status: 403 });
-        }
+    const { data: newProposal, error } = await supabase
+      .from("session_proposals")
+      .insert(insertPayload)
+      .select('*')
+      .single();
 
-        // 2) Ensure the requesting user has upvoted this post
-        const { data: voteCheck, error: voteErr } = await supabase
-            .from("votes")
-            .select("id", { count: 'exact' }) // More efficient check
-            .eq("post_id", postId)
-            .eq("user_id", user.id)
-            .eq("vote_type", "up");
+    if (error) throw error;
 
-        if (voteErr) {
-            return NextResponse.json({ error: "DB error checking votes", details: voteErr.message }, { status: 500 });
-        }
-        if (!voteCheck || voteCheck.length === 0) {
-            return NextResponse.json({ error: "Only upvoters can create proposals for this post" }, { status: 403 });
-        }
-
-        // 3) Insert proposal
-        const { data: proposal, error: insertErr } = await supabase
-            .from("session_proposals")
-            .insert({
-                post_id: postId,
-                proposer_id: user.id,
-                mode,
-                selected_dates: selectedDates,
-                selected_time_slots: selectedTimeSlots,
-                chosen_location: chosenLocation ?? null
-            })
-            .select("id") // Only select the ID to get the reference for the notification
-            .single();
-
-        if (insertErr) {
-            return NextResponse.json({ error: "Could not create proposal", details: insertErr.message }, { status: 500 });
-        }
-
-        // 4) Create notification for the post author
-        await supabase.from("notifications").insert({
-            recipient_id: post.author_id,
-            sender_id: user.id,
-            type: "proposal_created",
-            payload: {
-                postId,
-                proposalId: proposal.id,
-                proposerUsername: user.user_metadata?.username || 'a user'
-            }
-        });
-
-        return NextResponse.json({ message: "Proposal created successfully", proposalId: proposal.id }, { status: 201 });
-
-    } catch (error: any) {
-        console.error("Error creating session proposal:", error);
-        return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 });
+    // notify post author
+    const { data: postRow } = await supabase.from("posts").select("author_id, title").eq("id", postId).single();
+    if (postRow?.author_id) {
+      await supabase.from("notifications").insert({
+        recipient_id: postRow.author_id,
+        sender_id: user.id,
+        type: "proposal_created",
+        payload: { post_id: postId, proposal_id: newProposal.id, proposer_id: user.id, title: postRow.title },
+      });
     }
+
+    return NextResponse.json({ data: newProposal }, { status: 201 });
+  } catch (err: any) {
+    console.error("POST /session-proposals error:", err);
+    return NextResponse.json({ error: "Failed to create proposal", details: err.message }, { status: 500 });
+  }
 }

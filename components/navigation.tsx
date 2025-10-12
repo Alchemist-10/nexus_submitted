@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ProfileDropdown } from "./profile-dropdown"
 import { AdvancedSearchModal } from "./advanced-search-modal"
 import { ThemeToggle } from "./theme-toggle"
+import { NotificationBell } from "./notificationBell"
 
 export function Navigation() {
   const pathname = usePathname()
@@ -71,6 +72,7 @@ export function Navigation() {
               >
                 <Search className="h-4 w-4" />
               </Button>
+              <NotificationBell/>
               <ThemeToggle />
               <ProfileDropdown />
             </div>
@@ -86,6 +88,7 @@ export function Navigation() {
               >
                 <Search className="h-4 w-4" />
               </Button>
+              <NotificationBell/>
               <Button
                 variant="ghost"
                 size="sm"

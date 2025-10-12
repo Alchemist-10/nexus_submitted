@@ -1,14 +1,11 @@
-// app/api/posts/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 
-// GET /api/posts - Handles all post fetching with advanced filtering
+// GET /api/posts - Fetches posts, now including availability data
 export async function GET(request: NextRequest) {
     const supabase = getSupabaseServerClient();
     const { searchParams } = request.nextUrl;
 
-    // --- Extract all filter parameters ---
     const feedType = searchParams.get("feed") || "timeline";
     const sortBy = searchParams.get("sortBy") || "created_at";
     const order = searchParams.get("order") || "desc";
@@ -25,36 +22,35 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // --- Base Query ---
+        // UPDATED: Added availability fields to the select query
         let query = supabase
             .from("posts")
             .select(
                 `
                 id, created_at, content, title, tags, post_type, images, upvotes, comment_count,
+                availability_start_date, availability_end_date, preferred_start_time, preferred_end_time,
                 author:profiles!inner(id, username, full_name, avatar_url, batch, semester),
                 user_vote:votes!left(vote_type, user_id)
             `
             )
             .order(sortBy, { ascending: order === "asc" });
 
-        // --- Apply Feed Logic ---
+        // --- Feed Logic (no changes needed here) ---
         if (feedType === "relevance") {
-            // ✅ FIX: Implemented Relevance feed logic
             const { data: profile } = await supabase.from("profiles").select("interests").eq("id", user.id).single();
             const interests = profile?.interests || [];
             if (interests.length > 0) {
                 query = query.overlaps("tags", interests);
             } else {
-                return NextResponse.json({ data: [] }); // No interests, so no relevant posts
+                return NextResponse.json({ data: [] });
             }
         } else if (feedType === "engaged") {
-            // ✅ FIX: Implemented Engaged feed logic
             const { data: postIds, error } = await supabase.rpc("get_engaged_post_ids", { user_id_input: user.id });
             if (error) throw error;
             if (postIds && postIds.length > 0) {
                 query = query.in("id", postIds.map((item: any) => item.id));
             } else {
-                return NextResponse.json({ data: [] }); // No engaged posts
+                return NextResponse.json({ data: [] });
             }
         } else if (feedType === "merged") {
             const { data: friendIds } = await supabase.rpc("get_friend_ids", { user_id_input: user.id });
@@ -64,30 +60,18 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ data: [] });
             }
         }
-        // "timeline" is the default and requires no special filters.
 
-        // --- Apply Advanced Filters ---
-        if (search) {
-            query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
-        }
-        if (postTypes && postTypes.length > 0) {
-            query = query.in("post_type", postTypes);
-        }
-        if (tags && tags.length > 0) {
-            query = query.overlaps("tags", tags);
-        }
-        if (batches && batches.length > 0) {
-            query = query.in("author.batch", batches);
-        }
-        if (semesters && semesters.length > 0) {
-            query = query.in("author.semester", semesters);
-        }
+        // --- Advanced Filters (no changes needed here) ---
+        if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+        if (postTypes && postTypes.length > 0) query = query.in("post_type", postTypes);
+        if (tags && tags.length > 0) query = query.overlaps("tags", tags);
+        if (batches && batches.length > 0) query = query.in("author.batch", batches);
+        if (semesters && semesters.length > 0) query = query.in("author.semester", semesters);
         
-        // --- Execute Query ---
         const { data, error } = await query;
         if (error) throw error;
         
-        // --- Transform Data ---
+        // UPDATED: Mapped the new availability fields to the response
         const transformedPosts = data
             .map((post: any) => ({
                 ...post,
@@ -106,6 +90,10 @@ export async function GET(request: NextRequest) {
                 images: post.images || [],
                 isUpvoted: post.user_vote.length > 0 && post.user_vote[0].vote_type === 'up',
                 isDownvoted: post.user_vote.length > 0 && post.user_vote[0].vote_type === 'down',
+                availability_start_date: post.availability_start_date,
+                availability_end_date: post.availability_end_date,
+                preferred_start_time: post.preferred_start_time,
+                preferred_end_time: post.preferred_end_time,
             }));
 
         return NextResponse.json({ data: transformedPosts });
@@ -117,7 +105,7 @@ export async function GET(request: NextRequest) {
 }
 
 
-// POST /api/posts - This function is well-structured and requires no changes.
+// POST /api/posts - Creates a post, now including availability data
 export async function POST(request: NextRequest) {
     const supabase = getSupabaseServerClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -127,19 +115,44 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { title, content, postType, tags, images } = await request.json();
+        // UPDATED: Destructure the new availability fields from the request body
+        const {
+            title,
+            content,
+            postType,
+            tags,
+            images,
+            availability_start_date,
+            availability_end_date,
+            preferred_start_time,
+            preferred_end_time
+        } = await request.json();
+
         if (!title || !content || !postType) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
-
+        
+        // UPDATED: Add the new availability fields to the Supabase insert query
         const { data: newPost, error: postError } = await supabase
             .from("posts")
-            .insert({ title, content, post_type: postType, tags, images, author_id: user.id })
+            .insert({
+                title,
+                content,
+                post_type: postType,
+                tags,
+                images,
+                author_id: user.id,
+                availability_start_date,
+                availability_end_date,
+                preferred_start_time,
+                preferred_end_time,
+            })
             .select("id")
             .single();
 
         if (postError) throw postError;
 
+        // Tag handling logic (no changes needed)
         if (tags && tags.length > 0) {
             const { data: tagData } = await supabase
                 .from("tags")
@@ -160,4 +173,3 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to create post", details: error.message }, { status: 500 });
     }
 }
-

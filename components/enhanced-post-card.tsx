@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, UserPlus } from "lucide-react"
+import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, UserPlus, LayoutList } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,10 +13,12 @@ import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CommentSection } from "@/components/comment-section"; // ✅ 1. Import the new component
+import { useUser } from "@/hooks/use-user"
 
 interface EnhancedPostCardProps {
   id: string;
   author: {
+    id?:string;
     name: string;
     username: string;
     avatar_url: string; // ✅ FIX: Use 'avatar' to match the corrected API response
@@ -58,6 +60,8 @@ export function EnhancedPostCard({
   const [isVoting, setIsVoting] = useState(false);
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false); // ✅ 2. Add state to toggle the comment section
   const { toast } = useToast();
+  const { user: currentUser } = useUser();
+  const isAuthor = currentUser?.id === author?.id;
 
   useEffect(() => {
     setCurrentUpvotes(upvotes);
@@ -105,7 +109,7 @@ export function EnhancedPostCard({
     return colors[type as keyof typeof colors] || colors.Misc;
   };
 
-  const UPVOTE_THRESHOLD = 3;
+  const UPVOTE_THRESHOLD = 1;
   const safeAuthor = author || { name: "Anonymous", username: "unknown", avatar: "" };
 
   return (
@@ -174,14 +178,27 @@ export function EnhancedPostCard({
             </Button>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
-            {joinable && currentUpvotes >= UPVOTE_THRESHOLD && (
-              <Link href={`/join/${id}`} passHref>
-                <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Join
-                </Button>
-              </Link>
-            )}
+             {/* NEW: Conditional logic for Join/Manage buttons */}
+             {/* Always show the Join button if the post is joinable */}
+    {joinable && currentUpvotes >= UPVOTE_THRESHOLD && (
+        <Link href={`/join/${id}`} passHref>
+            <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Join (Test)
+            </Button>
+        </Link>
+    )}
+
+    {/* Additionally, show the Manage button ONLY to the author */}
+    {isAuthor && joinable && (
+        <Link href={`/posts/${id}/proposals`} passHref>
+            <Button className="nexus-glow bg-purple-500 hover:bg-purple-500/90 text-white h-8 px-3 text-xs font-bold">
+                <LayoutList className="h-4 w-4 mr-2" />
+                Manage
+            </Button>
+        </Link>
+    )}
+            
             <Button variant="ghost" size="sm" onClick={() => setIsBookmarked(!isBookmarked)} className={`h-8 w-8 p-0 ${isBookmarked ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current scale-110" : ""}`} /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"><Share2 className="h-4 w-4" /></Button>
           </div>

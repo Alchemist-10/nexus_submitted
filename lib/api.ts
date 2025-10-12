@@ -1,3 +1,4 @@
+// lib/api.ts
 import { Post, Comment, LeaderboardEntry, SearchResult, Tag, User, PaginatedResponse } from './types'
 
 // Detect if the code is running on the server
@@ -100,18 +101,23 @@ class ApiClient {
         return this.request<{ data: Post }>(`/posts/${id}`)
     }
 
-    async createPost(data: {
-        title: string
-        content: string
-        postType: string
-        tags?: string[]
-        images?: string[]
-    }): Promise<Post> {
-        return this.request<Post>('/posts', {
-            method: 'POST',
-            body: JSON.stringify(data),
-        })
-    }
+  async createPost(data: {
+    title: string;
+    content: string;
+    postType: string;
+    tags?: string[];
+    images?: string[];
+    // NEW: Add optional availability fields
+    availability_start_date?: string;
+    availability_end_date?: string;
+    preferred_start_time?: string;
+    preferred_end_time?: string;
+}): Promise<Post> {
+    return this.request<Post>('/posts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
 
     async updatePost(id: string, data: {
         title?: string
@@ -214,17 +220,57 @@ class ApiClient {
     );
     }
 
-    async createSessionProposal(postId: string, payload: {
+   async createSessionProposal(postId: string, payload: {
         mode: string;
-        selectedDates: string[];
-        selectedTimeSlots: string[];
-        chosenLocation: string | null;
+        selectedDate: string;
+        startTime: string;
+        endTime: string;
+        chosenLocations: string[];
     }): Promise<any> {
+        // We transform the simple payload into the shape your API route expects
+        const apiPayload = {
+            mode: payload.mode,
+            selectedDates: [payload.selectedDate],
+            selectedTimeSlots: [`${payload.startTime}-${payload.endTime}`],
+            chosenLocation: payload.chosenLocations.length > 0 ? payload.chosenLocations[0] : null,
+        };
         return this.request(`/posts/${postId}/session-proposals`, {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: JSON.stringify(apiPayload),
         });
     }
+
+    // --- Proposal related helpers (added) ---
+
+    // Fetches all proposals for a post
+    async getProposals(postId: string): Promise<{ data: any[] }> {
+        return this.request<{ data: any[] }>(`/posts/${postId}/session-proposals`);
+    }
+
+  async acceptProposal(proposalId: string): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/session-proposals/${proposalId}/accept`, {
+        method: 'POST',
+    });
+}
+
+// Rejects a single proposal
+async rejectProposal(proposalId: string): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`/session-proposals/${proposalId}/reject`, {
+        method: 'POST',
+    });
+}
+
+    // Finalizes the schedule for a post (greedy algorithm)
+    async finalizeProposals(postId: string): Promise<{ data: any }> {
+        return this.request<{ data: any }>(`/posts/${postId}/finalize`, {
+            method: 'POST',
+        });
+    }
+    // In lib/api.ts, inside the ApiClient class
+
+async getNotifications(): Promise<{ data: any[] }> {
+    return this.request<{ data: any[] }>('/notifications');
+}
 
 }
 

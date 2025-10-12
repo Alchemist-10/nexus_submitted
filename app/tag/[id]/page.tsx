@@ -64,7 +64,7 @@ export default async function TagPage({ params }: Props) {
           ) : (
             posts.map((p: any) => (
               <Card key={p.id} className="p-4">
-                <Link href={`/posts/${p.id}`} className="block">
+                <Link href={`/post/${p.id}`} className="block">
                   <h3 className="font-medium">{p.title}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">{p.content}</p>
                   <div className="text-xs text-muted-foreground mt-2">{new Date(p.created_at).toLocaleString()}</div>

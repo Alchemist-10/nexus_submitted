@@ -132,10 +132,10 @@ export function AdvancedSearchModal({ open, onOpenChange }: AdvancedSearchModalP
                     key={`${suggestion.type}-${suggestion.id}`}
                     href={
                       suggestion.type === "post"
-                        ? `/post/${encodeURIComponent(suggestion.id)}`
+                        ? `/posts/${encodeURIComponent(suggestion.id)}`
                         : suggestion.type === "user"
                         ? `/profile/${encodeURIComponent(suggestion.id)}`
-                        : `/tag/${encodeURIComponent(suggestion.id)}`
+                        : `/tags/${encodeURIComponent(suggestion.id)}`
                     }
                     onClick={() => {
                       setQuery(suggestion.value);
@@ -274,7 +274,7 @@ const ResultsList = ({ results, onOpenChange }: { results: SearchResult; onOpenC
 
 const PostResult = ({ post, onOpenChange }: { post: any; onOpenChange: (open: boolean) => void }) => (
   <Card className="p-4 hover:bg-muted/50 transition-colors">
-    <Link href={`/post/${post.id}`} onClick={() => onOpenChange(false)}>
+    <Link href={`/posts/${encodeURIComponent(post.id)}`} onClick={() => onOpenChange(false)}>
       <h4 className="font-medium mb-1">{post.title}</h4>
       <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
     </Link>
@@ -283,7 +283,7 @@ const PostResult = ({ post, onOpenChange }: { post: any; onOpenChange: (open: bo
 
 const UserResult = ({ user, onOpenChange }: { user: any; onOpenChange: (open: boolean) => void }) => (
   <Card className="p-4 hover:bg-muted/50 transition-colors">
-    <Link href={`/profile/${user.username}`} onClick={() => onOpenChange(false)} className="flex items-center space-x-3">
+    <Link href={`/profile/${encodeURIComponent(user.username)}`} onClick={() => onOpenChange(false)} className="flex items-center space-x-3">
       <Avatar className="h-10 w-10">
         <AvatarImage src={user.avatar_url} />
         <AvatarFallback>{user.full_name?.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
@@ -297,7 +297,7 @@ const UserResult = ({ user, onOpenChange }: { user: any; onOpenChange: (open: bo
 );
 
 const TagResult = ({ tag, onOpenChange }: { tag: any; onOpenChange: (open: boolean) => void }) => (
-  <Link href={`/tag/${encodeURIComponent(tag.name)}`} onClick={() => onOpenChange(false)}>
+  <Link href={`/tags/${encodeURIComponent(tag.name)}`} onClick={() => onOpenChange(false)}>
     <Card className="p-4 hover:bg-muted/50 transition-colors">
       <div className="flex items-center justify-between">
         <div>

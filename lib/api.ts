@@ -1,6 +1,15 @@
 import { Post, Comment, LeaderboardEntry, SearchResult, Tag, User, PaginatedResponse } from './types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
+// Detect if the code is running on the server
+const isServer = typeof window === 'undefined';
+
+// ✅ FIX: Construct the base URL correctly.
+// This creates an absolute URL when on the server, and a relative one on the client.
+// Make sure to set NEXT_PUBLIC_SITE_URL in your .env.local file (e.g., NEXT_PUBLIC_SITE_URL=http://localhost:3000)
+const API_BASE_URL = isServer
+  ? `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api`
+  : '/api';
+
 
 class ApiClient {
     private async request<T>(
@@ -22,7 +31,6 @@ class ApiClient {
             throw new Error(error.error || `Request failed with status ${response.status}`)
         }
 
-        // Handle cases where the response body might be empty (e.g., 204 No Content)
         const text = await response.text();
         return text ? JSON.parse(text) : ({} as T);
     }
@@ -33,37 +41,31 @@ class ApiClient {
         id: string,
         voteType: 'up' | 'down'
     ): Promise<{ message: string; voteType: string | null; upvotes?: number }> {
-        // Defensive validation
         if (voteType !== 'up' && voteType !== 'down') {
             throw new Error(`apiClient.votePost: invalid voteType "${String(voteType)}"`)
         }
 
         const payload = { voteType }
-        console.debug('[apiClient.votePost] ->', `/posts/${id}/vote`, payload)
-
         return this.request<{ message: string; voteType: string | null; upvotes?: number }>(
             `/posts/${id}/vote`,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
-                // REMOVED: Redundant Content-Type header, as the base `request` method already handles this.
             }
         )
     }
 
     async removeVote(postId: string): Promise<{ message: string; voteType: string | null; upvotes?: number }> {
-        console.debug('[apiClient.removeVote] ->', `/posts/${postId}/vote`, 'DELETE')
         return this.request<{ message: string; voteType: string | null; upvotes?: number }>(`/posts/${postId}/vote`, {
             method: 'DELETE',
         })
     }
 
     async getUserVote(postId: string): Promise<{ voteType: string | null }> {
-        console.debug('[apiClient.getUserVote] ->', `/posts/${postId}/vote`, 'GET')
         return this.request<{ voteType: string | null }>(`/posts/${postId}/vote`)
     }
 
-    // --- OTHER METHODS (UNCHANGED) ---
+    // --- OTHER METHODS ---
 
     async getPosts(params: {
     page?: number;
@@ -71,23 +73,19 @@ class ApiClient {
     sortBy?: string;
     order?: 'asc' | 'desc';
     feed?: 'timeline' | 'merged' | 'engaged' | 'relevance';
-    // New filter types
     search?: string;
     postTypes?: string[];
     tags?: string[];
     batches?: string[];
     semesters?: string[];
-  }): Promise<{ data: Post[] }> {
+    }): Promise<{ data: Post[] }> {
     const searchParams = new URLSearchParams();
 
-    // Standard params
     if (params.page) searchParams.set('page', params.page.toString());
     if (params.limit) searchParams.set('limit', params.limit.toString());
     if (params.sortBy) searchParams.set('sortBy', params.sortBy);
     if (params.order) searchParams.set('order', params.order);
     if (params.feed) searchParams.set('feed', params.feed);
-
-    // New filter params (serialize arrays to comma-separated strings)
     if (params.search) searchParams.set('search', params.search);
     if (params.postTypes && params.postTypes.length > 0) searchParams.set('postTypes', params.postTypes.join(','));
     if (params.tags && params.tags.length > 0) searchParams.set('tags', params.tags.join(','));
@@ -96,10 +94,10 @@ class ApiClient {
 
     const queryString = searchParams.toString();
     return this.request<{ data: Post[] }>(`/posts?${queryString}`);
-  }
+    }
 
-    async getPost(id: string): Promise<Post> {
-        return this.request<Post>(`/posts/${id}`)
+    async getPost(id: string): Promise<{ data: Post }> {
+        return this.request<{ data: Post }>(`/posts/${id}`)
     }
 
     async createPost(data: {
@@ -191,12 +189,10 @@ class ApiClient {
         return this.request<SearchResult>(`/search?${searchParams.toString()}`)
     }
 
-    // ... other methods like getTags, createTag, getProfile etc.
     async getProfileByUsername(username: string): Promise<any> {
         return this.request(`/profile/${username}`);
     }
 
-    // You will also need methods for connections
     async sendFriendRequest(userId: string): Promise<any> {
         return this.request('/connections', {
             method: 'POST',
@@ -210,13 +206,13 @@ class ApiClient {
         });
     }
     async autocomplete(params: { q: string; limit?: number }) {
-  const searchParams = new URLSearchParams();
-  searchParams.set("q", params.q);
-  if (params.limit) searchParams.set("limit", String(params.limit));
-  return this.request<{ suggestions: Array<{ type: string; id?: string; value: string }> }>(
+    const searchParams = new URLSearchParams();
+    searchParams.set("q", params.q);
+    if (params.limit) searchParams.set("limit", String(params.limit));
+    return this.request<{ suggestions: Array<{ type: string; id?: string; value: string }> }>(
     `/autocomplete?${searchParams.toString()}`
-  );
-}
+    );
+    }
 
     async createSessionProposal(postId: string, payload: {
         mode: string;

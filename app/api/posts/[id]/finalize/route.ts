@@ -7,24 +7,43 @@ function parseSlot(dateStr: string, slotStr: string) {
     const [startStr, endStr] = slotStr.split("-");
     const [sh, sm] = startStr.split(":").map(Number);
     const [eh, em] = endStr.split(":").map(Number);
-    const start = new Date(dateStr); start.setHours(sh, sm, 0, 0);
-    const end = new Date(dateStr); end.setHours(eh, em, 0, 0);
-    const duration = Math.round((end.getTime()-start.getTime())/60000);
+    const start = new Date(dateStr);
+    start.setHours(sh, sm, 0, 0);
+    const end = new Date(dateStr);
+    end.setHours(eh, em, 0, 0);
+    const duration = Math.round((end.getTime() - start.getTime()) / 60000);
     if (isNaN(duration) || duration <= 0) return null;
     return { start, end, duration };
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const supabase = getSupabaseServerClient();
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
+  if (authErr || !user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const postId = params.id;
-    const { data: post, error: postErr } = await supabase.from("posts").select("id, author_id, title").eq("id", postId).single();
+    const { data: post, error: postErr } = await supabase
+      .from("posts")
+      .select("id, author_id, title")
+      .eq("id", postId)
+      .single();
     if (postErr || !post) throw postErr || new Error("Post not found");
-    if (post.author_id !== user.id) return NextResponse.json({ error: "Only author can finalize." }, { status: 403 });
+    if (post.author_id !== user.id)
+      return NextResponse.json(
+        { error: "Only author can finalize." },
+        { status: 403 }
+      );
 
     const { data: proposals, error } = await supabase
       .from("session_proposals")
@@ -33,29 +52,77 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .eq("status", "pending");
     if (error) throw error;
 
-    const intervals = (proposals || []).map((p: any) => {
-      const date = (p.selected_dates && p.selected_dates[0]) || null;
-      const slot = (p.selected_time_slots && p.selected_time_slots[0]) || null;
-      const parsed = date && slot ? parseSlot(date, slot) : null;
-      return { proposal: p, parsed };
-    }).filter((it: any) => it.parsed !== null);
+    // Build parsed intervals for proposals
+    const intervals = (proposals || [])
+      .map((p: any) => {
+        const date = (p.selected_dates && p.selected_dates[0]) || null;
+        const slot =
+          (p.selected_time_slots && p.selected_time_slots[0]) || null;
+        const parsed = date && slot ? parseSlot(date, slot) : null;
+        return { proposal: p, parsed };
+      })
+      .filter((it: any) => it.parsed !== null);
 
-    intervals.sort((a: any, b: any) => a.parsed.end.getTime() - b.parsed.end.getTime());
+    if (intervals.length === 0) {
+      return NextResponse.json({
+        data: { sessions: [], acceptedProposalCount: 0 },
+      });
+    }
 
-    const selected: any[] = [];
-    let lastEnd: Date | null = null;
-    for (const item of intervals) {
-      if (!lastEnd || item.parsed.start >= lastEnd) {
-        selected.push(item);
-        lastEnd = item.parsed.end;
+    // Sweep-line to find time with maximum overlap
+    type Event = { time: number; delta: number; proposalId: string };
+    const events: Event[] = [];
+    for (const it of intervals) {
+      if (!it.parsed) continue;
+      events.push({
+        time: it.parsed.start.getTime(),
+        delta: 1,
+        proposalId: it.proposal.id,
+      });
+      events.push({
+        time: it.parsed.end.getTime(),
+        delta: -1,
+        proposalId: it.proposal.id,
+      });
+    }
+    // sort by time, with start events before end events at same timestamp
+    events.sort((a, b) => a.time - b.time || b.delta - a.delta);
+
+    let active = 0;
+    let maxActive = 0;
+    let maxTime = events[0].time;
+    for (const ev of events) {
+      active += ev.delta;
+      if (active > maxActive) {
+        maxActive = active;
+        maxTime = ev.time;
       }
     }
 
+    const maxDate = new Date(maxTime);
+
+    // Determine which proposals overlap the chosen time
+    const overlapping = intervals.filter(
+      (it: any) =>
+        it.parsed.start.getTime() <= maxTime &&
+        it.parsed.end.getTime() > maxTime
+    );
+
+    // Determine end of common overlap window (minimum end among overlapping intervals)
+    const minEnd = new Date(
+      Math.min(...overlapping.map((it: any) => it.parsed.end.getTime()))
+    );
+    let duration_minutes = Math.round(
+      (minEnd.getTime() - maxDate.getTime()) / 60000
+    );
+    if (!duration_minutes || duration_minutes <= 0) duration_minutes = 60; // fallback
+
     const createdSessions: any[] = [];
-    for (const item of selected) {
-      const p = item.proposal;
-      const scheduled_at = item.parsed.start.toISOString();
-      const duration_minutes = item.parsed.duration;
+
+    // Create a session for each overlapping proposal (so each proposer has a session record)
+    for (const it of overlapping) {
+      const p = it.proposal;
+      const scheduled_at = new Date(maxTime).toISOString();
       const { data: session, error: sErr } = await supabase
         .from("sessions")
         .insert({
@@ -75,26 +142,54 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         continue;
       }
       createdSessions.push(session);
-      await supabase.from("session_proposals").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", p.id);
-      await supabase.from("notifications").insert({
-        recipient_id: p.proposer_id,
-        sender_id: user.id,
-        type: "proposal_accepted",
-        payload: { post_id: postId, proposal_id: p.id, session_id: session.id },
-      });
+      await supabase
+        .from("session_proposals")
+        .update({ status: "accepted", updated_at: new Date().toISOString() })
+        .eq("id", p.id);
     }
 
-    const selectedIds = selected.map((it: any) => it.proposal.id);
+    // Mark other proposals as rejected
+    const acceptedIds = overlapping.map((it: any) => it.proposal.id);
     await supabase
       .from("session_proposals")
       .update({ status: "rejected", updated_at: new Date().toISOString() })
       .eq("post_id", postId)
       .neq("status", "rejected")
-      .not("id", "in", `(${selectedIds.map((id: string) => `'${id}'`).join(",")})`);
+      .not(
+        "id",
+        "in",
+        `(${acceptedIds.map((id: string) => `'${id}'`).join(",")})`
+      );
 
-    return NextResponse.json({ data: { sessions: createdSessions, acceptedProposalCount: createdSessions.length } });
+    // Send notification about finalized time to everyone who clicked Join (all proposers)
+    const scheduledISO = new Date(maxTime).toISOString();
+    for (const p of proposals || []) {
+      const isAccepted = acceptedIds.includes(p.id);
+      await supabase.from("notifications").insert({
+        recipient_id: p.proposer_id,
+        sender_id: user.id,
+        type: "session_finalized",
+        payload: {
+          post_id: postId,
+          proposal_id: p.id,
+          scheduled_at: scheduledISO,
+          accepted: isAccepted,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      data: {
+        sessions: createdSessions,
+        acceptedProposalCount: createdSessions.length,
+        scheduled_at: new Date(maxTime).toISOString(),
+      },
+    });
   } catch (err: any) {
     console.error("Finalize error:", err);
-    return NextResponse.json({ error: "Failed to finalize proposals", details: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to finalize proposals", details: err.message },
+      { status: 500 }
+    );
   }
 }

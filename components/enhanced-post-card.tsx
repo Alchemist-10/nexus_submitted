@@ -54,6 +54,7 @@ interface EnhancedPostCardProps {
   tags: string[] | null;
   google_meet_link?: string;
   sessions?: SessionItem[];
+  finalized_scheduled_at?: string | null;
   onJoinClick?: () => void;
   isUpvoted?: boolean;
   isDownvoted?: boolean;
@@ -76,6 +77,7 @@ export function EnhancedPostCard({
   postType = "Misc",
   title,
   sessions = [],
+  finalized_scheduled_at = null,
   joinable = true,
   google_meet_link,
   onJoinClick,
@@ -344,11 +346,43 @@ export function EnhancedPostCard({
             {/* --- FINALIZED ACTION BUTTON LOGIC --- */}
 
             {sessions.length > 0 ? (
-              // 1. If session is scheduled, show "Scheduled!"
+              // 1. If session(s) exist, show Join with scheduled time
               <div className="text-right">
-                <p className="text-sm font-semibold text-green-400">
-                  Session Scheduled!
-                </p>
+                {/** show single chosen time if finalized_scheduled_at provided, otherwise try to format first session's scheduled_at */}
+                {(() => {
+                  const dt =
+                    finalized_scheduled_at ||
+                    (sessions[0] as any)?.scheduled_at ||
+                    null;
+                  if (!dt)
+                    return (
+                      <p className="text-sm font-semibold text-green-400">
+                        Session Scheduled!
+                      </p>
+                    );
+                  try {
+                    const d = new Date(dt);
+                    const hours = d.getHours();
+                    const minutes = d.getMinutes();
+                    const ampm = hours >= 12 ? "PM" : "AM";
+                    const h12 = ((hours + 11) % 12) + 1;
+                    const mm = minutes.toString().padStart(2, "0");
+                    return (
+                      <Link href={`/join/${id}`} passHref>
+                        <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Join ({h12}:{mm} {ampm})
+                        </Button>
+                      </Link>
+                    );
+                  } catch (e) {
+                    return (
+                      <p className="text-sm font-semibold text-green-400">
+                        Session Scheduled!
+                      </p>
+                    );
+                  }
+                })()}
               </div>
             ) : (
               // 2. Otherwise, if joinable, show Join OR Manage

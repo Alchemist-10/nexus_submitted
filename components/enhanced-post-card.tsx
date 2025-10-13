@@ -346,9 +346,8 @@ export function EnhancedPostCard({
             {/* --- FINALIZED ACTION BUTTON LOGIC --- */}
 
             {sessions.length > 0 ? (
-              // 1. If session(s) exist, show Join with scheduled time
+              // 1. If session(s) exist, show Join Meet button with scheduled time for everyone
               <div className="text-right">
-                {/** show single chosen time if finalized_scheduled_at provided, otherwise try to format first session's scheduled_at */}
                 {(() => {
                   const dt =
                     finalized_scheduled_at ||
@@ -367,13 +366,26 @@ export function EnhancedPostCard({
                     const ampm = hours >= 12 ? "PM" : "AM";
                     const h12 = ((hours + 11) % 12) + 1;
                     const mm = minutes.toString().padStart(2, "0");
+                    // If a google_meet_link exists and user can see it, link to it. Otherwise link to the join page.
+                    const href =
+                      canSeeMeetLink && google_meet_link
+                        ? google_meet_link
+                        : `/join/${id}`;
                     return (
-                      <Link href={`/join/${id}`} passHref>
+                      <a
+                        href={href}
+                        target={href.startsWith("http") ? "_blank" : undefined}
+                        rel={
+                          href.startsWith("http")
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                      >
                         <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Join ({h12}:{mm} {ampm})
+                          <Video className="h-4 w-4 mr-2" />
+                          Join Meet ({h12}:{mm} {ampm})
                         </Button>
-                      </Link>
+                      </a>
                     );
                   } catch (e) {
                     return (

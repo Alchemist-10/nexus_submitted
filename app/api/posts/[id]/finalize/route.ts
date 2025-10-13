@@ -52,16 +52,38 @@ export async function POST(
       .eq("status", "pending");
     if (error) throw error;
 
-    // Build parsed intervals for proposals
-    const intervals = (proposals || [])
+    // Build parsed intervals from proposals
+    const proposalIntervals = (proposals || [])
       .map((p: any) => {
         const date = (p.selected_dates && p.selected_dates[0]) || null;
         const slot =
           (p.selected_time_slots && p.selected_time_slots[0]) || null;
         const parsed = date && slot ? parseSlot(date, slot) : null;
-        return { proposal: p, parsed };
+        return { type: "proposal", proposal: p, parsed };
       })
       .filter((it: any) => it.parsed !== null);
+
+    // Also include existing sessions for this post so re-finalize considers them
+    const { data: existingSessions } = await supabase
+      .from("sessions")
+      .select("*")
+      .eq("post_id", postId);
+    const sessionIntervals = (existingSessions || [])
+      .map((s: any) => {
+        const start = s.scheduled_at ? new Date(s.scheduled_at) : null;
+        const duration = s.duration_minutes || 60;
+        const parsed = start
+          ? {
+              start,
+              end: new Date(start.getTime() + duration * 60000),
+              duration,
+            }
+          : null;
+        return { type: "session", session: s, parsed };
+      })
+      .filter((it: any) => it.parsed !== null);
+
+    const intervals = [...proposalIntervals, ...sessionIntervals];
 
     if (intervals.length === 0) {
       return NextResponse.json({
@@ -74,15 +96,19 @@ export async function POST(
     const events: Event[] = [];
     for (const it of intervals) {
       if (!it.parsed) continue;
+      const idForEvent =
+        it.type === "proposal"
+          ? (it as any).proposal.id
+          : (it as any).session?.id || "";
       events.push({
         time: it.parsed.start.getTime(),
         delta: 1,
-        proposalId: it.proposal.id,
+        proposalId: idForEvent,
       });
       events.push({
         time: it.parsed.end.getTime(),
         delta: -1,
-        proposalId: it.proposal.id,
+        proposalId: idForEvent,
       });
     }
     // sort by time, with start events before end events at same timestamp
@@ -101,9 +127,10 @@ export async function POST(
 
     const maxDate = new Date(maxTime);
 
-    // Determine which proposals overlap the chosen time
+    // Determine which intervals overlap the chosen time
     const overlapping = intervals.filter(
       (it: any) =>
+        it.parsed &&
         it.parsed.start.getTime() <= maxTime &&
         it.parsed.end.getTime() > maxTime
     );
@@ -119,37 +146,79 @@ export async function POST(
 
     const createdSessions: any[] = [];
 
-    // Create a session for each overlapping proposal (so each proposer has a session record)
+    // For overlapping intervals, create or update sessions
+    const scheduled_at_iso = new Date(maxTime).toISOString();
     for (const it of overlapping) {
-      const p = it.proposal;
-      const scheduled_at = new Date(maxTime).toISOString();
-      const { data: session, error: sErr } = await supabase
-        .from("sessions")
-        .insert({
-          post_id: postId,
-          proposal_id: p.id,
-          author_id: post.author_id,
-          proposer_id: p.proposer_id,
-          scheduled_at,
-          duration_minutes,
-          mode: p.mode,
-          location: p.chosen_location,
-        })
-        .select("*")
-        .single();
-      if (sErr) {
-        console.warn("Failed to create session for proposal", p.id, sErr);
-        continue;
+      if (it.type === "proposal") {
+        const p = (it as any).proposal;
+        // Check if a session already exists for this proposal
+        const existing = (existingSessions || []).find(
+          (s: any) => s.proposal_id === p.id || s.proposer_id === p.proposer_id
+        );
+        if (existing) {
+          // update existing
+          const { error: uErr } = await supabase
+            .from("sessions")
+            .update({ scheduled_at: scheduled_at_iso, duration_minutes })
+            .eq("id", existing.id);
+          if (uErr) console.warn("Failed to update session", existing.id, uErr);
+          else {
+            const { data: updated } = await supabase
+              .from("sessions")
+              .select("*")
+              .eq("id", existing.id)
+              .single();
+            if (updated) createdSessions.push(updated);
+          }
+        } else {
+          // create new session
+          const { data: session, error: sErr } = await supabase
+            .from("sessions")
+            .insert({
+              post_id: postId,
+              proposal_id: p.id,
+              author_id: post.author_id,
+              proposer_id: p.proposer_id,
+              scheduled_at: scheduled_at_iso,
+              duration_minutes,
+              mode: p.mode,
+              location: p.chosen_location,
+            })
+            .select("*")
+            .single();
+          if (sErr) {
+            console.warn("Failed to create session for proposal", p.id, sErr);
+          } else {
+            createdSessions.push(session);
+          }
+        }
+        await supabase
+          .from("session_proposals")
+          .update({ status: "accepted", updated_at: new Date().toISOString() })
+          .eq("id", p.id);
+      } else if (it.type === "session") {
+        // update existing session schedule to new finalized time
+        const s = (it as any).session;
+        const { error: uErr } = await supabase
+          .from("sessions")
+          .update({ scheduled_at: scheduled_at_iso, duration_minutes })
+          .eq("id", s.id);
+        if (uErr) console.warn("Failed to update session", s.id, uErr);
+        else {
+          const { data: updated } = await supabase
+            .from("sessions")
+            .select("*")
+            .eq("id", s.id)
+            .single();
+          if (updated) createdSessions.push(updated);
+        }
       }
-      createdSessions.push(session);
-      await supabase
-        .from("session_proposals")
-        .update({ status: "accepted", updated_at: new Date().toISOString() })
-        .eq("id", p.id);
     }
 
     // Mark other proposals as rejected
-    const acceptedIds = overlapping.map((it: any) => it.proposal.id);
+    const acceptedIds = overlapping
+      .filter((it: any) => it.type === "proposal")
+      .map((it: any) => it.proposal.id);
     await supabase
       .from("session_proposals")
       .update({ status: "rejected", updated_at: new Date().toISOString() })
@@ -163,15 +232,29 @@ export async function POST(
 
     // Send notification about finalized time to everyone who clicked Join (all proposers)
     const scheduledISO = new Date(maxTime).toISOString();
+    const proposersToNotify = new Map<string, { proposalId?: string }>();
     for (const p of proposals || []) {
-      const isAccepted = acceptedIds.includes(p.id);
+      proposersToNotify.set(p.proposer_id, { proposalId: p.id });
+    }
+    // also include existing sessions' proposers
+    for (const s of existingSessions || []) {
+      if (!proposersToNotify.has(s.proposer_id))
+        proposersToNotify.set(s.proposer_id, {});
+    }
+    for (const [proposerId, meta] of proposersToNotify.entries()) {
+      const isAccepted = acceptedIds.some((id: string) => {
+        const it = overlapping.find(
+          (o: any) => o.type === "proposal" && (o as any).proposal.id === id
+        );
+        return !!it && (it as any).proposal.proposer_id === proposerId;
+      });
       await supabase.from("notifications").insert({
-        recipient_id: p.proposer_id,
+        recipient_id: proposerId,
         sender_id: user.id,
         type: "session_finalized",
         payload: {
           post_id: postId,
-          proposal_id: p.id,
+          proposal_id: meta.proposalId || null,
           scheduled_at: scheduledISO,
           accepted: isAccepted,
         },

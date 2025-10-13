@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, UserPlus, LayoutList } from "lucide-react"
+import { ArrowUp, ArrowDown, MessageCircle, Share2, Bookmark, MoreHorizontal, UserPlus, LayoutList, Video } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,22 +12,34 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CommentSection } from "@/components/comment-section"; // ✅ 1. Import the new component
+import { CommentSection } from "@/components/comment-section";
 import { useUser } from "@/hooks/use-user"
+
+interface SessionItem {
+  proposer_id: string;
+  // common acceptance flags / status variants that backend might use
+  accepted?: boolean;
+  is_accepted?: boolean;
+  status?: string;
+  proposal_status?: string;
+}
 
 interface EnhancedPostCardProps {
   id: string;
   author: {
-    id?:string;
+    id?: string;
     name: string;
     username: string;
-    avatar_url: string; // ✅ FIX: Use 'avatar' to match the corrected API response
+    avatar_url: string;
   };
   content: string;
   timestamp: string;
   upvotes: number;
   commentCount: number;
   tags: string[] | null;
+  google_meet_link?: string;
+  sessions?: SessionItem[]; 
+  onJoinClick?: () => void;
   isUpvoted?: boolean;
   isDownvoted?: boolean;
   images?: string[];
@@ -48,7 +60,10 @@ export function EnhancedPostCard({
   images = [],
   postType = "Misc",
   title,
+  sessions = [],
   joinable = true,
+  google_meet_link,
+  onJoinClick,
   isUpvoted: initialIsUpvoted = false,
   isDownvoted: initialIsDownvoted = false,
   onVoteSuccess
@@ -58,10 +73,28 @@ export function EnhancedPostCard({
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [currentUpvotes, setCurrentUpvotes] = useState(upvotes);
   const [isVoting, setIsVoting] = useState(false);
-  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false); // ✅ 2. Add state to toggle the comment section
+  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const { toast } = useToast();
   const { user: currentUser } = useUser();
   const isAuthor = currentUser?.id === author?.id;
+
+  // robust acceptance check to support different backend shapes
+  const isSessionAccepted = (session?: SessionItem) => {
+    if (!session) return false;
+    if (typeof session.accepted === "boolean") return session.accepted;
+    if (typeof session.is_accepted === "boolean") return session.is_accepted;
+    if (typeof session.status === "string") return session.status.toLowerCase() === "accepted";
+    if (typeof session.proposal_status === "string") return session.proposal_status.toLowerCase() === "accepted";
+    return false;
+  };
+
+  // current user is an accepted proposer if there's a session for them that is accepted
+  const isAcceptedProposer = Boolean(
+    sessions && currentUser?.id && sessions.some(s => s.proposer_id === currentUser.id && isSessionAccepted(s))
+  );
+
+  // allow author OR accepted proposer to see the meet link
+  const canSeeMeetLink = Boolean(google_meet_link) && (isAuthor || isAcceptedProposer);
 
   useEffect(() => {
     setCurrentUpvotes(upvotes);
@@ -93,7 +126,7 @@ export function EnhancedPostCard({
       } else {
         await apiClient.votePost(id, voteType);
       }
-      if (onVoteSuccess) onVoteSuccess(); // This will trigger a refetch to update comment counts
+      if (onVoteSuccess) onVoteSuccess();
     } catch (error) {
       toast({ title: "Vote failed", description: "Could not save your vote.", variant: "destructive" });
       setCurrentUpvotes(previousState.upvotes);
@@ -110,11 +143,12 @@ export function EnhancedPostCard({
   };
 
   const UPVOTE_THRESHOLD = 1;
-  const safeAuthor = author || { name: "Anonymous", username: "unknown", avatar: "" };
+  const safeAuthor = author || { name: "Anonymous", username: "unknown", avatar_url: "" };
 
   return (
     <CardSpotlight className="group nexus-card nexus-slide-in bg-card/80 backdrop-blur-md border-border/50 p-0 rounded-2xl">
       <CardHeader className="p-4 sm:p-6 pb-3">
+        {/* ... (Header content remains the same) ... */}
         <div className="flex items-start justify-between space-x-4">
           <div className="flex items-center space-x-3 min-w-0">
             <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-primary/20">
@@ -145,6 +179,7 @@ export function EnhancedPostCard({
       </CardHeader>
 
       <CardContent className="p-4 sm:p-6 pt-0">
+        {/* ... (Content, images, and tags remain the same) ... */}
         {title && <h2 className="text-lg font-bold mb-2 text-foreground">{title}</h2>}
         <p className="text-sm text-foreground mb-4 leading-relaxed text-pretty">{content}</p>
 
@@ -160,53 +195,72 @@ export function EnhancedPostCard({
 
         <div className="flex flex-wrap gap-2 mb-4">
           {(tags || []).map((tag, index) => (
-            <Badge key={tag} variant="secondary" className="text-xs nexus-tag" style={{ animationDelay: `${index * 50}ms` }}>#{tag}</Badge>
+            <Badge key={`${tag}-${index}`} variant="secondary" className="text-xs nexus-tag" style={{ animationDelay: `${index * 50}ms` }}>#{tag}</Badge>
           ))}
         </div>
-
+        
         <div className="flex items-center justify-between pt-3 border-t border-border/50">
           <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* Vote and Comment Buttons */}
             <div className="flex items-center bg-muted/50 rounded-lg p-1 backdrop-blur-sm">
-              <Button variant="ghost" size="sm" onClick={() => handleVote('up')} disabled={isVoting} className={`h-8 w-8 p-0 ${isUpvoted ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><ArrowUp className={`h-4 w-4 ${isUpvoted ? "scale-110" : ""}`} /></Button>
-              <span className="text-sm font-medium px-2 min-w-[2rem] text-center font-mono">{currentUpvotes}</span>
-              <Button variant="ghost" size="sm" onClick={() => handleVote('down')} disabled={isVoting} className={`h-8 w-8 p-0 ${isDownvoted ? "text-destructive bg-destructive/20" : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"}`}><ArrowDown className={`h-4 w-4 ${isDownvoted ? "scale-110" : ""}`} /></Button>
+                <Button variant="ghost" size="sm" onClick={() => handleVote('up')} disabled={isVoting} className={`h-8 w-8 p-0 ${isUpvoted ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary"}`}><ArrowUp className="h-4 w-4" /></Button>
+                <span className="text-sm font-medium px-2 min-w-[2rem] text-center">{currentUpvotes}</span>
+                <Button variant="ghost" size="sm" onClick={() => handleVote('down')} disabled={isVoting} className={`h-8 w-8 p-0 ${isDownvoted ? "text-destructive bg-destructive/20" : "text-muted-foreground hover:text-destructive"}`}><ArrowDown className="h-4 w-4" /></Button>
             </div>
-            {/* ✅ 3. Add onClick handler to the comment button */}
             <Button variant="ghost" size="sm" onClick={() => setIsCommentSectionOpen(!isCommentSectionOpen)} className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-primary">
-              <MessageCircle className="h-4 w-4 mr-1" />
-              <span className="text-xs font-medium font-mono">{commentCount}</span>
+                <MessageCircle className="h-4 w-4 mr-1" />
+                <span>{commentCount}</span>
             </Button>
           </div>
-          <div className="flex items-center space-x-1 sm:space-x-2">
-             {/* NEW: Conditional logic for Join/Manage buttons */}
-             {/* Always show the Join button if the post is joinable */}
-    {joinable && currentUpvotes >= UPVOTE_THRESHOLD && (
-        <Link href={`/join/${id}`} passHref>
-            <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Join (Test)
-            </Button>
-        </Link>
-    )}
-
-    {/* Additionally, show the Manage button ONLY to the author */}
-    {isAuthor && joinable && (
-        <Link href={`/posts/${id}/proposals`} passHref>
-            <Button className="nexus-glow bg-purple-500 hover:bg-purple-500/90 text-white h-8 px-3 text-xs font-bold">
-                <LayoutList className="h-4 w-4 mr-2" />
-                Manage
-            </Button>
-        </Link>
-    )}
+          
+          <div className="flex items-center space-x-2">
             
-            <Button variant="ghost" size="sm" onClick={() => setIsBookmarked(!isBookmarked)} className={`h-8 w-8 p-0 ${isBookmarked ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary hover:bg-primary/10"}`}><Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current scale-110" : ""}`} /></Button>
+            {/* --- FINALIZED ACTION BUTTON LOGIC --- */}
+
+            {sessions.length > 0 ? (
+                // 1. If session is scheduled, show "Scheduled!"
+                <div className="text-right">
+                    <p className="text-sm font-semibold text-green-400">Session Scheduled!</p>
+                </div>
+            ) : (
+                // 2. Otherwise, if joinable, show Join OR Manage
+                joinable && currentUpvotes >= UPVOTE_THRESHOLD && (
+                    isAuthor ? (
+                        <Link href={`/posts/${id}/proposals`} passHref>
+                            <Button className="nexus-glow bg-purple-500 hover:bg-purple-500/90 text-white h-8 px-3 text-xs font-bold">
+                                <LayoutList className="h-4 w-4 mr-2" />
+                                Manage
+                            </Button>
+                        </Link>
+                    ) : (
+                        <Link href={`/join/${id}`} passHref>
+                            <Button className="nexus-glow bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs font-bold">
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Join
+                            </Button>
+                        </Link>
+                    )
+                )
+            )}
+
+            {/* 3. Show Google Meet link if user has permission */}
+            {canSeeMeetLink && (
+                 <a href={google_meet_link} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="h-8 px-3 text-xs">
+                        <Video className="h-4 w-4 mr-2" />
+                        Join Meet
+                    </Button>
+                </a>
+            )}
+            
+            <Button variant="ghost" size="sm" onClick={() => setIsBookmarked(!isBookmarked)} className={`h-8 w-8 p-0 ${isBookmarked ? "text-primary bg-primary/20" : "text-muted-foreground hover:text-primary"}`}><Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"><Share2 className="h-4 w-4" /></Button>
           </div>
         </div>
 
-        {/* ✅ 4. Conditionally render the new comment section */}
         {isCommentSectionOpen && <CommentSection postId={id} />}
       </CardContent>
     </CardSpotlight>
   );
 }
+

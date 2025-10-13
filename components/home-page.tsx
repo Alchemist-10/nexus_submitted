@@ -11,6 +11,7 @@ import { apiClient } from "@/lib/api"
 import { useRealtimePosts } from "@/lib/hooks/useRealtime"
 import { Post } from "@/lib/types"
 
+
 type Filters = {
   search?: string
   sortBy?: string
@@ -81,7 +82,8 @@ export default function HomePage() {
                     style={{ animationDelay: `${100 + index * 50}ms` }}
                   >
                     <ErrorBoundary>
-                      <EnhancedPostCard {...(post as any)} onVoteSuccess={() => refetchPosts(filters)} />
+                      <EnhancedPostCard {...(post as any)} onVoteSuccess={() => refetchPosts(filters)}
+                        />
                     </ErrorBoundary>
                   </div>
                 ))}

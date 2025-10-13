@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 
-// GET /api/posts - Fetches posts, now including availability data
+// GET /api/posts - Fetches posts, including session and meet link data
 export async function GET(request: NextRequest) {
     const supabase = getSupabaseServerClient();
     const { searchParams } = request.nextUrl;
@@ -22,20 +22,21 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // UPDATED: Added availability fields to the select query
         let query = supabase
             .from("posts")
             .select(
                 `
                 id, created_at, content, title, tags, post_type, images, upvotes, comment_count,
                 availability_start_date, availability_end_date, preferred_start_time, preferred_end_time,
+                google_meet_link,
                 author:profiles!inner(id, username, full_name, avatar_url, batch, semester),
-                user_vote:votes!left(vote_type, user_id)
+                user_vote:votes!left(vote_type, user_id),
+                sessions(proposer_id)
             `
             )
             .order(sortBy, { ascending: order === "asc" });
 
-        // --- Feed Logic (no changes needed here) ---
+        // --- Feed & Advanced Filters Logic ---
         if (feedType === "relevance") {
             const { data: profile } = await supabase.from("profiles").select("interests").eq("id", user.id).single();
             const interests = profile?.interests || [];
@@ -61,7 +62,6 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // --- Advanced Filters (no changes needed here) ---
         if (search) query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
         if (postTypes && postTypes.length > 0) query = query.in("post_type", postTypes);
         if (tags && tags.length > 0) query = query.overlaps("tags", tags);
@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
         const { data, error } = await query;
         if (error) throw error;
         
-        // UPDATED: Mapped the new availability fields to the response
         const transformedPosts = data
             .map((post: any) => ({
                 ...post,
@@ -94,6 +93,8 @@ export async function GET(request: NextRequest) {
                 availability_end_date: post.availability_end_date,
                 preferred_start_time: post.preferred_start_time,
                 preferred_end_time: post.preferred_end_time,
+                google_meet_link: post.google_meet_link,
+                sessions: post.sessions || [],
             }));
 
         return NextResponse.json({ data: transformedPosts });
@@ -104,8 +105,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-
-// POST /api/posts - Creates a post, now including availability data
+// POST /api/posts - Creates a post
 export async function POST(request: NextRequest) {
     const supabase = getSupabaseServerClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ✅ FIXED: Simplified to a single try...catch block
     try {
-        // UPDATED: Destructure the new availability fields from the request body
         const {
             title,
             content,
@@ -125,14 +125,14 @@ export async function POST(request: NextRequest) {
             availability_start_date,
             availability_end_date,
             preferred_start_time,
-            preferred_end_time
+            preferred_end_time,
+            google_meet_link
         } = await request.json();
 
         if (!title || !content || !postType) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
         
-        // UPDATED: Add the new availability fields to the Supabase insert query
         const { data: newPost, error: postError } = await supabase
             .from("posts")
             .insert({
@@ -146,24 +146,26 @@ export async function POST(request: NextRequest) {
                 availability_end_date,
                 preferred_start_time,
                 preferred_end_time,
+                google_meet_link,
             })
             .select("id")
             .single();
 
         if (postError) throw postError;
 
-        // Tag handling logic (no changes needed)
         if (tags && tags.length > 0) {
             const { data: tagData } = await supabase
                 .from("tags")
                 .upsert(tags.map((name: string) => ({ name })), { onConflict: "name" })
                 .select("id, name");
 
-            const postTagLinks = tagData!.map((tag) => ({
-                post_id: newPost.id,
-                tag_id: tag.id,
-            }));
-            await supabase.from("post_tags").insert(postTagLinks);
+            if (tagData) {
+                const postTagLinks = tagData.map((tag) => ({
+                    post_id: newPost.id,
+                    tag_id: tag.id,
+                }));
+                await supabase.from("post_tags").insert(postTagLinks);
+            }
         }
 
         return NextResponse.json({ message: "Post created successfully", data: newPost }, { status: 201 });
@@ -172,4 +174,4 @@ export async function POST(request: NextRequest) {
         console.error("Error in POST /api/posts:", error.message);
         return NextResponse.json({ error: "Failed to create post", details: error.message }, { status: 500 });
     }
-}
+} // ✅ FIXED: Removed the extra closing brace that was here

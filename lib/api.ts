@@ -112,6 +112,8 @@ class ApiClient {
     availability_end_date?: string;
     preferred_start_time?: string;
     preferred_end_time?: string;
+     google_meet_link?: string;
+
 }): Promise<Post> {
     return this.request<Post>('/posts', {
         method: 'POST',

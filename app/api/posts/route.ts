@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       .from("posts")
       .select(
         `
-                id, created_at, content, title, tags, post_type, images, upvotes, comment_count,
+                id,  created_at, content, title, tags, post_type, images, upvotes, comment_count,
                 availability_start_date, availability_end_date, preferred_start_time, preferred_end_time,
                 google_meet_link,
                 author:profiles!inner(id, username, full_name, avatar_url, batch, semester),

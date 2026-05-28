@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
         let query = supabase
             .from('profiles')
-            .select(`
+            .select(`   
         id,
         username,
         full_name,

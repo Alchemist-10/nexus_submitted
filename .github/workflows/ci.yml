@@ -1,0 +1,37 @@
+name: Nexus checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nexus_test
+          POSTGRES_PASSWORD: nexus_test
+          POSTGRES_DB: nexus_test_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nexus_test -d nexus_test_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm test
+        name: PostgreSQL integration and independent-connection race
+        env:
+          DATABASE_TEST_URL: postgres://nexus_test:nexus_test@localhost:5432/nexus_test_ci
+          ALLOW_DATABASE_TEST_RESET: "1"
+      - run: npm run build

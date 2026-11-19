@@ -568,6 +568,48 @@ body {
 .feed-card-bottom .stat-label {
   font-size: 10px;
 }
+.feed-engagement .vote-form {
+  margin: 0;
+}
+.feed-engagement .vote-button,
+.answer-link,
+.own-vote-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.feed-engagement .vote-button {
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+.feed-engagement .vote-button.is-voted {
+  color: var(--burgundy);
+  background: #f0dce2;
+  border-color: #c28c9b;
+}
+.answer-link {
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.answer-link:hover,
+.feed-engagement .vote-button:hover {
+  background: var(--soft);
+  color: var(--burgundy);
+  border-color: #c28c9b;
+}
+.own-vote-count {
+  background: #f7f4f6;
+  color: var(--muted);
+}
+.feed-engagement .vote-error {
+  max-width: 220px;
+  margin-top: 5px;
+  line-height: 1.5;
+}
 .feed-discovery {
   min-width: 0;
   background: #fff;

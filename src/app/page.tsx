@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { FeedPostActions } from "@/components/feed-post-actions";
 import { HomeSessionPreview } from "@/components/home-session-preview";
 import { MentorRating } from "@/components/mentor-rating";
 import { listMentors } from "@/features/mentorship/queries";
@@ -9,7 +10,6 @@ import { currentProfile } from "@/features/profiles/queries";
 import {
   ArrowUpRight,
   MessageSquare,
-  ArrowUp,
   Video,
   Plus,
   Search,
@@ -37,10 +37,8 @@ export default async function CommunityPage({
 }) {
   const filters = await searchParams;
   const profile = await currentProfile();
-  const [{ posts, hasMore, unavailable }, mentors] = await Promise.all([
-    loadFeed(filters),
-    listMentors(),
-  ]);
+  const [{ posts, votedPostIds, hasMore, unavailable }, mentors] =
+    await Promise.all([loadFeed(filters, profile?.id), listMentors()]);
   const categoryIcons = {
     coding: Code2,
     projects: FolderKanban,
@@ -320,18 +318,16 @@ export default async function CommunityPage({
                   </span>
                 )}
                 <div className="feed-card-bottom">
-                  <div>
-                    <span>
-                      <ArrowUp size={15} />
-                      {post.upvotes} <span className="stat-label">upvotes</span>
-                    </span>
-                    <span>
-                      <MessageSquare size={15} />
-                      {post.answer_count}{" "}
-                      <span className="stat-label">
-                        {post.answer_count === 1 ? "answer" : "answers"}
-                      </span>
-                    </span>
+                  <div className="feed-engagement">
+                    <FeedPostActions
+                      postId={post.id}
+                      title={post.title}
+                      authorId={post.author_id}
+                      viewerId={profile?.id}
+                      voted={votedPostIds.includes(post.id)}
+                      upvotes={post.upvotes}
+                      answerCount={post.answer_count}
+                    />
                     {post.accepted_answer_id && (
                       <span className="resolved-label">
                         <CheckCircle2 size={14} aria-hidden="true" />

@@ -8,12 +8,16 @@ export function VoteButton({
   kind,
   voted,
   count,
+  showLabel = false,
+  targetTitle,
 }: {
   postId: string;
   targetId: string;
   kind: "post" | "answer";
   voted: boolean;
   count: number;
+  showLabel?: boolean;
+  targetTitle?: string;
 }) {
   const [state, action, pending] = useActionState(setVote, {});
   return (
@@ -26,10 +30,15 @@ export function VoteButton({
         disabled={pending}
         className={`vote-button ${voted ? "is-voted" : ""}`}
         aria-pressed={voted}
-        aria-label={`${voted ? "Remove upvote from" : "Upvote"} ${kind}`}
+        aria-label={`${voted ? "Remove upvote from" : "Upvote"} ${kind}${targetTitle ? `: ${targetTitle}` : ""}`}
       >
         <ArrowUp size={17} />
         <span>{count}</span>
+        {showLabel && (
+          <span className="stat-label">
+            {count === 1 ? "upvote" : "upvotes"}
+          </span>
+        )}
       </button>
       {state.error && (
         <span className="vote-error" role="alert">

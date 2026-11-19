@@ -6,14 +6,18 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isConfigured } from "@/lib/env";
 import { categories, topics } from "./shared";
 
-export async function loadFeed(filters: {
-  sort?: string;
-  category?: string;
-  topic?: string;
-  q?: string;
-  page?: string;
-}) {
-  if (!isConfigured()) return { posts: [], hasMore: false, unavailable: false };
+export async function loadFeed(
+  filters: {
+    sort?: string;
+    category?: string;
+    topic?: string;
+    q?: string;
+    page?: string;
+  },
+  viewerId?: string,
+) {
+  if (!isConfigured())
+    return { posts: [], votedPostIds: [], hasMore: false, unavailable: false };
   const db = await createSupabaseServerClient();
   let query = db.from("community_post_summaries").select("*");
   if (filters.category && filters.category in categories)
@@ -42,11 +46,28 @@ export async function loadFeed(filters: {
     .range((page - 1) * 15, page * 15);
   if (error) {
     if (error.code === "PGRST205" || error.code === "42P01")
-      return { posts: [], hasMore: false, unavailable: true };
+      return { posts: [], votedPostIds: [], hasMore: false, unavailable: true };
     throw new Error("The community could not be loaded. Please try again.");
   }
+  const posts = ((data || []) as PostSummary[]).slice(0, 15);
+  const { data: votes, error: voteError } =
+    viewerId && posts.length
+      ? await db
+          .from("community_votes")
+          .select("post_id")
+          .eq("voter_id", viewerId)
+          .in(
+            "post_id",
+            posts.map((post) => post.id),
+          )
+      : { data: [], error: null };
+  if (voteError)
+    throw new Error("Your upvotes could not be loaded. Please try again.");
   return {
-    posts: ((data || []) as PostSummary[]).slice(0, 15),
+    posts,
+    votedPostIds: (votes || []).flatMap((vote) =>
+      vote.post_id ? [vote.post_id] : [],
+    ),
     hasMore: (data || []).length > 15,
     unavailable: false,
   };

@@ -124,6 +124,9 @@ export default async function PostPage({
                   <span className="muted">({post.answer_count})</span>
                 </h2>
               </div>
+              <Link className="button secondary" href="#answer-form">
+                Write an answer
+              </Link>
             </div>
             <p className="muted">
               An explanation can help. A conversation can take it further.
@@ -223,7 +226,7 @@ export default async function PostPage({
               ))
             )}
           </section>
-          <section className="panel">
+          <section className="panel" id="answer-form">
             <h2>Help them understand the approach.</h2>
             <p className="muted">
               Explain the reasoning, ask a useful question, or share what worked

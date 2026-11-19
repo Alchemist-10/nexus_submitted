@@ -1,256 +1,141 @@
-# Nexus Backend Documentation
+# Nexus
 
-## Overview
+A clean rebuild of the Nexus mentorship platform. The original project stays in `../Nexus_submitted/` as a reference. This first milestone includes the database, email authentication, mentor profiles, availability, and one free introductory booking per learner-mentor pair.
 
-This backend provides a complete API for the Nexus social leaderboard application, built with Next.js API routes and Supabase PostgreSQL database.
+## What works in this milestone
 
-## Features
+- Email/password signup, email confirmation, sign-in, and sign-out using cookie-based Supabase SSR authentication.
+- Public mentor discovery and self-service mentor profiles.
+- Availability entered in the browser's local timezone and stored as `timestamptz`.
+- Transactional booking, stable retry keys, one free call per pair, and database-enforced participant overlap protection across learner/mentor roles.
+- Participant-only session dashboard and booking history.
+- Cancellation before the start time releases both the slot and free introduction. Only the mentor can mark a call complete after its end time.
+- Private meeting links, available only to confirmed participants within the join window.
+- Executable migrations, local fixtures, SQL authorization tests, input validation tests, CI, and a production build.
 
-- **User Authentication**: Email/password and OAuth (GitHub, Google, Discord)
-- **Posts Management**: CRUD operations for posts with upvoting, comments, tags
-- **Real-time Updates**: Live updates for posts, comments, and leaderboard
-- **Search**: Full-text search across posts, users, and tags
-- **Leaderboard**: Global and topic-specific rankings
-- **User Profiles**: Profile management with reputation system
+Payments, community feeds, automated email reminders, Redis, and integrated video rooms are later milestones. This app does not charge users or distribute mentor payouts yet. It uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
 
-## Database Schema
+## Run the app
 
-### Core Tables
+Use Node.js 22.12 or newer.
 
-1. **profiles** - User profiles extending auth.users
-2. **posts** - User posts with content, type, images
-3. **comments** - Comments on posts
-4. **tags** - Categorization tags
-5. **votes** - Upvotes/downvotes on posts and comments
-6. **post_tags** - Many-to-many relationship between posts and tags
-
-### Key Features
-
-- **Row Level Security (RLS)** enabled on all tables
-- **Automatic triggers** for updating counts (upvotes, comments, tags)
-- **Real-time subscriptions** for live updates
-- **Domain restriction** for email signups (iiitkottayam.ac.in)
-
-## API Endpoints
-
-### Posts
-
-- `GET /api/posts` - Get posts with pagination and filtering
-- `POST /api/posts` - Create a new post
-- `GET /api/posts/[id]` - Get specific post with comments
-- `PUT /api/posts/[id]` - Update a post
-- `DELETE /api/posts/[id]` - Delete a post
-- `POST /api/posts/[id]/vote` - Vote on a post
-- `GET /api/posts/[id]/vote` - Get user's vote on a post
-
-### Comments
-
-- `POST /api/comments` - Create a comment
-- `POST /api/comments/[id]/vote` - Vote on a comment
-
-### Leaderboard
-
-- `GET /api/leaderboard` - Get leaderboard data
-  - Query params: `tag`, `limit`, `timeRange`
-
-### Search
-
-- `GET /api/search` - Search across posts, users, tags
-  - Query params: `q` (required), `type`, `limit`
-
-### Tags
-
-- `GET /api/tags` - Get all tags
-- `POST /api/tags` - Create a new tag
-
-### Profile
-
-- `GET /api/profile` - Get current user's profile
-- `PUT /api/profile` - Update current user's profile
-- `GET /api/profile/[username]` - Get user profile by username
-
-## Setup Instructions
-
-### 1. Environment Variables
-
-Create `.env.local` in the project root:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://ngwsfyicwrtveajgushg.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nd3NmeWljd3J0dmVhamd1c2hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTQ2NzksImV4cCI6MjA3NDczMDY3OX0.EUoH_lgA3BYpNMx_8U7EDcgmOOr2VvV1JsBC_46uuyM
-NEXT_PUBLIC_API_URL=/api
-NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN=iiitkottayam.ac.in
-```
-
-### 2. Database Setup
-
-Run the migration in your Supabase SQL editor:
-
-```sql
--- Copy and paste the contents of supabase/migrations/001_initial_schema.sql
-```
-
-### 3. Supabase Configuration
-
-1. **Authentication Settings**:
-   - Go to Authentication → URL Configuration
-   - Set Site URL: `http://localhost:3000` (for development)
-   - Add Redirect URLs: `http://localhost:3000/**`
-
-2. **OAuth Providers** (optional):
-   - Go to Authentication → Providers
-   - Enable GitHub, Google, or Discord
-   - Configure with your OAuth app credentials
-
-3. **Email Settings**:
-   - Go to Authentication → Email
-   - Configure SMTP or use Supabase's built-in email service
-
-### 4. Install Dependencies
-
-```bash
-npm install @supabase/supabase-js @supabase/ssr
-```
-
-### 5. Run the Application
-
-```bash
+```powershell
+cd D:\Projects_after_jun_2026\mainpro1\nexus
+npm ci
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-## Frontend Integration
+Visit <http://localhost:3000>. Without environment values, the landing page and account forms render and link to `/setup`; live accounts and bookings require a new Supabase connection. No fake backend or authentication bypass is used.
 
-### Using the API Client
+The original database was deleted. Use a new project; old keys will not restore it. Never put a service-role/secret key in a `NEXT_PUBLIC_` variable.
 
-```typescript
-import { apiClient } from "@/lib/api";
+## Option A: local Supabase
 
-// Get posts
-const posts = await apiClient.getPosts({
-  page: 1,
-  limit: 10,
-  sortBy: "created_at",
-  order: "desc",
-});
+Docker Desktop must be running. From this directory:
 
-// Create a post
-const newPost = await apiClient.createPost({
-  content: "Hello world!",
-  postType: "Question",
-  tags: ["React", "Next.js"],
-});
-
-// Vote on a post
-await apiClient.votePost("post-id", "up");
+```powershell
+npx supabase start
+npx supabase db reset
+npx supabase status
 ```
 
-### Real-time Updates
+`db reset` recreates the LOCAL database using the migration and seed. It is destructive to local development data. The seed contains two explicit demo accounts and is intended for local use only.
 
-```typescript
-import { useRealtimePosts, useRealtimeComments } from '@/lib/hooks/useRealtime'
+Put the local API URL and publishable key shown by the CLI in `.env.local`:
 
-function PostsList() {
-  const { posts, setPosts } = useRealtimePosts()
-
-  // Posts will automatically update when new posts are created
-  return (
-    <div>
-      {posts.map(post => (
-        <PostCard key={post.id} {...post} />
-      ))}
-    </div>
-  )
-}
+```dotenv
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local publishable key>
 ```
 
-### Authentication
+If your CLI only displays an anon JWT key, that public anon key is also accepted as the publishable-key value. Use the public key, never the service-role key. Restart `npm run dev` after changing environment values.
 
-```typescript
-import { authService } from "@/lib/auth";
+Seed accounts:
 
-// Sign in
-await authService.signIn("user@iiitkottayam.ac.in", "password");
+| Role    | Email              | Password               |
+| ------- | ------------------ | ---------------------- |
+| Mentor  | mentor@nexus.test  | Nexus-local-demo-2026! |
+| Learner | learner@nexus.test | Nexus-local-demo-2026! |
 
-// Sign up
-await authService.signUp("user@iiitkottayam.ac.in", "password", "Full Name");
+Slots are seeded two days ahead. Fresh signups receive confirmation mail in the local email viewer at <http://localhost:54324>. The local Studio opens at <http://localhost:54323>.
 
-// OAuth
-await authService.signInWithOAuth("github");
+## Option B: a new hosted Supabase project
 
-// Get current user
-const user = await authService.getCurrentUser();
+1. Create a new project using Supabase.
+2. Apply `supabase/migrations/202611190001_foundation.sql` using the SQL editor, or link the project with the CLI and run `supabase db push`. Apply the migration once. Keep local demo seeds out of production.
+3. Copy the project's API URL and publishable/anon key into `.env.local`.
+4. In Auth URL Configuration, set Site URL to `http://localhost:3000` for development. Allow `http://localhost:3000/auth/callback`.
+5. Enable email signup and email confirmation. Set a password minimum of at least 12 characters. Confirm your email before signing in.
+6. The default PKCE confirmation flow is handled by `/auth/callback`. For cross-device confirmation, update the Confirm Signup email template link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`; the app handles that route too.
+7. Configure a real email sender for a live project using Supabase's SMTP settings. The app does not silently skip email confirmation.
+
+Set the actual HTTPS deployment URL in both Supabase and `NEXT_PUBLIC_APP_URL` before building for deployment. `NEXT_PUBLIC_` values are embedded at build time: changing them in a production environment requires a rebuild. Local and hosted environment configuration stays outside Git.
+
+## Try the complete free booking flow
+
+1. Sign in as a mentor and open **Mentor studio**.
+2. Publish the mentor profile and add a future slot.
+3. Sign in as a different account in another browser profile or private window.
+4. Open the mentor profile and book the free introduction.
+5. Check that both accounts see the session in **My sessions**.
+6. The mentor adds an HTTPS video meeting link to that booking. It is not included in public mentor/slot data or general booking responses.
+7. **Meeting access** becomes available 15 minutes before the call and closes 15 minutes after it ends. Both role and booking state are checked on the server/database.
+8. Cancelling before the start time restores the introduction. A completed call consumes the free introduction with that mentor. Another mentor has a separate allowance.
+
+A member can both mentor and learn. Public profile data includes name and username, not account email. This milestone has no elevated admin UI. No-show and paid cancellation policies will be designed with the payment milestone; a confirmed introduction continues to reserve the allowance until a supported transition occurs.
+
+## Verify
+
+```powershell
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run build
 ```
 
-## Deployment
+The default tests execute the real migration, constraints, RLS policies, and functions in PGlite PostgreSQL. Only the Supabase-managed auth schema/identity context is simulated in tests. Coverage includes unauthorized writes, row privacy, duplicate requests, repeat trials, cancellations, cross-role overlapping sessions, transaction rollback, join-window privacy, and validation.
 
-### Vercel Deployment
+PGlite has one backend, so the independent-connection race test is deliberately skipped there. It does not validate Supabase's actual email/Auth/PostgREST stack. CI also runs the suite on a disposable PostgreSQL 17 service to exercise independent connections. CI has been configured; its remote execution is not claimed until it runs.
 
-1. **Environment Variables**:
-   - Add all environment variables in Vercel dashboard
-   - Update `NEXT_PUBLIC_SUPABASE_URL` to your production Supabase URL
+To run that mode yourself, first create a disposable localhost database named `nexus_test_local` and use an appropriately privileged test user:
 
-2. **Supabase Production Setup**:
-   - Update Site URL in Supabase to your production domain
-   - Update Redirect URLs to include your production domain
-   - Configure production OAuth apps
+```powershell
+$env:DATABASE_TEST_URL = 'postgres://test_user:test_password@localhost:5432/nexus_test_local'
+$env:ALLOW_DATABASE_TEST_RESET = '1'
+npm test
+Remove-Item Env:DATABASE_TEST_URL
+Remove-Item Env:ALLOW_DATABASE_TEST_RESET
+```
 
-3. **Deploy**:
-   ```bash
-   vercel --prod
-   ```
+That mode DROPS and recreates application/auth schemas in the selected test database. The test helper rejects non-local hosts, databases without the `nexus_test` prefix, and runs without explicit reset opt-in. Never point it at a Supabase project or a database containing data you want to keep.
 
-### Other Platforms
+`/api/health` is a liveness endpoint. Its `databaseConfigured` field only indicates environment configuration, not a successful database connection.
 
-The application can be deployed to any platform that supports Next.js:
+## Structure
 
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
+```text
+src/app/                 Pages and auth callbacks
+src/components/          Small reusable UI/form components
+src/features/auth/       Authentication actions
+src/features/bookings/   Booking actions and queries
+src/features/mentorship/ Public mentor queries
+src/lib/                 Validated inputs, session/env/database contracts
+src/proxy.ts             Registered cookie-refresh proxy
+supabase/migrations/     Reproducible database schema and functions
+supabase/seed.sql        Local-only demo data
+tests/                   SQL integration and validation tests
+docs/phase-one-design.md Approved scope, defaults, and implementation plan
+```
 
-## Security Features
+`src/lib/database.types.ts` is a schema-derived contract maintained with this migration, not output claimed to have been generated from a running remote database. After applying the schema, the Supabase CLI can generate full types using `npx supabase gen types typescript --local` (or `--project-id YOUR_ID`). Review the output and replace that file; no service-role credentials should appear in generated types.
 
-- **Row Level Security (RLS)** on all database tables
-- **Authentication middleware** for protected routes
-- **Domain restriction** for email signups
-- **Input validation** on all API endpoints
-- **CORS protection** built into Next.js
+The database is authoritative: narrow RPCs validate the authenticated identity and reserve/cancel/complete sessions. General table writes are revoked. Participant reservations use GiST exclusion constraints, so an account cannot be a learner in one overlapping booking and a mentor in another. Meeting data has no direct API read grant. Definer functions use an empty search path, explicit object names, restricted execute grants, and ownership checks.
 
-## Performance Optimizations
+## Next milestones
 
-- **Database indexes** on frequently queried columns
-- **Pagination** for large datasets
-- **Real-time subscriptions** for live updates
-- **Caching** through Supabase's built-in caching
-
-## Monitoring and Logs
-
-- **Supabase Dashboard** for database monitoring
-- **Vercel Analytics** for application monitoring
-- **Error boundaries** in React components
-- **API error handling** with proper HTTP status codes
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Database connection errors**:
-   - Check environment variables
-   - Verify Supabase URL and keys
-
-2. **Authentication issues**:
-   - Check OAuth provider configuration
-   - Verify redirect URLs
-
-3. **Real-time not working**:
-   - Check Supabase real-time is enabled
-   - Verify RLS policies allow subscriptions
-
-### Support
-
-For issues and questions:
-
-1. Check Supabase logs in the dashboard
-2. Review Next.js logs in development
-3. Verify environment variables
-4. Check network requests in browser dev tools
+1. Optional paid offerings after the free introduction; verified server-side checkout, temporary slot holds, payment history, refunds, and reconciliation.
+2. Durable notification outbox, Redis/BullMQ workers, reminders, and authorized realtime notifications.
+3. Community features migrated one module at a time; search benchmarks, shared rate limits, monitoring, and campus pilot evidence.

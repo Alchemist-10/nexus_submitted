@@ -1,0 +1,23 @@
+import "server-only";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export async function loadMyBookings() {
+  const supabase = await createSupabaseServerClient();
+  const { data: bookings, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .order("starts_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error("Your sessions could not be loaded.");
+  const ids = [
+    ...new Set(
+      bookings.flatMap((booking) => [booking.mentor_id, booking.learner_id]),
+    ),
+  ];
+  const { data: profiles, error: profileError } = ids.length
+    ? await supabase.from("profiles").select("*").in("id", ids)
+    : { data: [], error: null };
+  if (profileError)
+    throw new Error("Session participants could not be loaded.");
+  return { bookings, profiles, requestTime: Date.now() };
+}

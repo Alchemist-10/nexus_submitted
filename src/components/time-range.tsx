@@ -4,6 +4,32 @@ import { useSyncExternalStore } from "react";
 const subscribe = () => () => {};
 const timezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const serverTimezone = () => "UTC";
+export function SessionDateTile({ start }: { start: string }) {
+  const zone = useSyncExternalStore(subscribe, timezone, serverTimezone);
+  const date = new Date(start);
+  return (
+    <div className="session-date-tile" aria-hidden="true">
+      <span>
+        {new Intl.DateTimeFormat("en", {
+          month: "short",
+          timeZone: zone,
+        }).format(date)}
+      </span>
+      <strong>
+        {new Intl.DateTimeFormat("en", {
+          day: "numeric",
+          timeZone: zone,
+        }).format(date)}
+      </strong>
+      <small>
+        {new Intl.DateTimeFormat("en", {
+          weekday: "short",
+          timeZone: zone,
+        }).format(date)}
+      </small>
+    </div>
+  );
+}
 export function TimeRange({ start, end }: { start: string; end?: string }) {
   const zone = useSyncExternalStore(subscribe, timezone, serverTimezone);
   const date = new Intl.DateTimeFormat("en", {

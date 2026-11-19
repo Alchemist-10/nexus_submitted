@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { HomeSessionPreview } from "@/components/home-session-preview";
+import { MentorRating } from "@/components/mentor-rating";
+import { listMentors } from "@/features/mentorship/queries";
+import { expertiseLabel } from "@/features/mentorship/presentation";
+import { Suspense } from "react";
 import { currentProfile } from "@/features/profiles/queries";
 import {
   ArrowUpRight,
@@ -8,6 +13,14 @@ import {
   Video,
   Plus,
   Search,
+  Compass,
+  Code2,
+  FolderKanban,
+  GraduationCap,
+  BriefcaseBusiness,
+  LayoutGrid,
+  ImageIcon,
+  CheckCircle2,
 } from "lucide-react";
 import { loadFeed } from "@/features/community/queries";
 import { categories, topics, type Topic } from "@/features/community/shared";
@@ -24,7 +37,16 @@ export default async function CommunityPage({
 }) {
   const filters = await searchParams;
   const profile = await currentProfile();
-  const { posts, hasMore, unavailable } = await loadFeed(filters);
+  const [{ posts, hasMore, unavailable }, mentors] = await Promise.all([
+    loadFeed(filters),
+    listMentors(),
+  ]);
+  const categoryIcons = {
+    coding: Code2,
+    projects: FolderKanban,
+    academics: GraduationCap,
+    career: BriefcaseBusiness,
+  };
   const page = Math.max(
     1,
     Math.min(100, Math.trunc(Number(filters.page)) || 1),
@@ -38,46 +60,87 @@ export default async function CommunityPage({
     return `/?${p}`;
   }
   return (
-    <div className="shell community-shell">
-      <section className="community-hero">
-        <div>
-          <span className="eyebrow">
-            FOR ENGINEERING STUDENTS. FROM PEOPLE WHO GET IT.
-          </span>
-          <h1>
-            Stuck on the approach?
-            <br />
-            <em>Find your person.</em>
-          </h1>
-          <p>
-            Some things click when someone walks you through them. Share the
-            problem. Find a mentor. Work it out together.
-          </p>
-          <div className="button-row">
-            <Link className="button" href="/posts/new">
-              <Plus size={17} />
-              Post where you’re stuck
-            </Link>
-            <Link className="text-link" href="/mentors">
-              Explore mentors <ArrowUpRight size={16} />
-            </Link>
+    <div
+      className={`shell community-shell ${profile ? "signed-in-community" : "guest-community"}`}
+    >
+      {profile ? (
+        <section className="workspace-welcome">
+          <div>
+            <span className="eyebrow">
+              <span className="status-dot" /> YOUR NEXT CHAPTER
+            </span>
+            <h1>
+              Hey {profile.full_name.split(" ")[0]},<br />
+              <span className="heading-accent">what’s on your mind?</span>
+            </h1>
+            <p>
+              A tricky problem. A big decision. Find someone to work through it
+              with.
+            </p>
+            <div className="button-row">
+              <Link className="button" href="/posts/new">
+                <Plus size={17} aria-hidden="true" /> Share where you’re stuck
+              </Link>
+              <Link className="text-link" href="/mentors">
+                Explore mentors <ArrowUpRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="hero-callout">
-          <Video size={28} strokeWidth={1.3} />
-          <h2>
-            More than
-            <br />
-            another answer.
-          </h2>
-          <p>
-            A person who listens.
-            <br />
-            An approach you understand.
-          </p>
-          <span>One free introductory call per mentor.</span>
-        </div>
-      </section>
+          <Suspense
+            fallback={
+              <div className="next-session-card">
+                <span className="eyebrow">YOUR NEXT CONVERSATION</span>
+                <h2>A little time. A new perspective.</h2>
+                <Link className="text-link" href="/dashboard">
+                  View your sessions <ArrowUpRight size={16} />
+                </Link>
+              </div>
+            }
+          >
+            <HomeSessionPreview userId={profile.id} />
+          </Suspense>
+        </section>
+      ) : (
+        <section className="community-hero">
+          <div>
+            <span className="eyebrow">
+              FOR ENGINEERING STUDENTS. FROM PEOPLE WHO GET IT.
+            </span>
+            <h1>
+              Stuck on the approach?
+              <br />
+              <em>Find your person.</em>
+            </h1>
+            <p>
+              Some things click when someone walks you through them. Share the
+              problem. Find a mentor. Work it out together.
+            </p>
+            <div className="button-row">
+              <Link className="button" href="/posts/new">
+                <Plus size={17} />
+                Post where you’re stuck
+              </Link>
+              <Link className="text-link" href="/mentors">
+                Explore mentors <ArrowUpRight size={16} />
+              </Link>
+            </div>
+          </div>
+          <div className="hero-callout">
+            <Video size={28} strokeWidth={1.3} />
+            <h2>
+              More than
+              <br />
+              another answer.
+            </h2>
+            <p>
+              A person who listens.
+              <br />
+              An approach you understand.
+            </p>
+            <span>One free introductory call per mentor.</span>
+          </div>
+        </section>
+      )}
       <div className="feed-layout">
         <aside className="feed-sidebar">
           {profile && (
@@ -102,17 +165,21 @@ export default async function CommunityPage({
               className={!filters.category ? "active" : ""}
               href={url({ category: "", page: "1" })}
             >
-              All learning requests
+              <LayoutGrid size={17} aria-hidden="true" /> All requests
             </Link>
-            {Object.entries(categories).map(([id, label]) => (
-              <Link
-                className={filters.category === id ? "active" : ""}
-                key={id}
-                href={url({ category: id, page: "1" })}
-              >
-                {label}
-              </Link>
-            ))}
+            {Object.entries(categories).map(([id, label]) => {
+              const Icon = categoryIcons[id as keyof typeof categoryIcons];
+              return (
+                <Link
+                  className={filters.category === id ? "active" : ""}
+                  key={id}
+                  href={url({ category: id, page: "1" })}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
           <div className="sidebar-note">
             <span className="eyebrow">YOU’VE BEEN THERE.</span>
@@ -131,9 +198,20 @@ export default async function CommunityPage({
         </aside>
         <section className="feed-main" aria-label="Learning requests">
           <div className="feed-heading">
-            <h2>Where we’re stuck</h2>
+            <h2>
+              Learning, in good company<span className="heading-dot">.</span>
+            </h2>
             <span>Questions worth a conversation.</span>
           </div>
+          <Link className="feed-compose-prompt" href="/posts/new">
+            <span className="compose-prompt-icon">
+              <Plus size={19} aria-hidden="true" />
+            </span>
+            <span>What could you use a hand with?</span>
+            <span className="compose-prompt-end">
+              Ask the community <ArrowUpRight size={16} aria-hidden="true" />
+            </span>
+          </Link>
           <form method="get" className="feed-search">
             <input
               type="hidden"
@@ -236,6 +314,7 @@ export default async function CommunityPage({
                 </div>
                 {post.image_paths.length > 0 && (
                   <span className="muted small-copy">
+                    <ImageIcon size={14} aria-hidden="true" />{" "}
                     {post.image_paths.length} attached{" "}
                     {post.image_paths.length === 1 ? "image" : "images"}
                   </span>
@@ -244,15 +323,19 @@ export default async function CommunityPage({
                   <div>
                     <span>
                       <ArrowUp size={15} />
-                      {post.upvotes}
+                      {post.upvotes} <span className="stat-label">upvotes</span>
                     </span>
                     <span>
                       <MessageSquare size={15} />
-                      {post.answer_count}
+                      {post.answer_count}{" "}
+                      <span className="stat-label">
+                        {post.answer_count === 1 ? "answer" : "answers"}
+                      </span>
                     </span>
                     {post.accepted_answer_id && (
                       <span className="resolved-label">
-                        Helpful answer accepted
+                        <CheckCircle2 size={14} aria-hidden="true" />
+                        Answer accepted
                       </span>
                     )}
                   </div>
@@ -298,6 +381,59 @@ export default async function CommunityPage({
             )}
           </div>
         </section>
+        <aside className="feed-discovery" aria-label="Discover mentors">
+          <div className="discovery-heading">
+            <span className="eyebrow">A PERSON, NOT JUST AN ANSWER</span>
+            <h2>Meet your next mentor.</h2>
+            <p>Turn a stuck moment into a conversation.</p>
+          </div>
+          {mentors.slice(0, 3).map((m) => (
+            <Link
+              className="mini-mentor"
+              href={`/mentors/${m.user_id}`}
+              key={m.user_id}
+            >
+              <Avatar
+                id={m.user_id}
+                name={m.profile?.full_name || "Mentor"}
+                path={m.profile?.avatar_path}
+                variant={m.profile?.avatar_variant}
+                size="medium"
+              />
+              <h3>{m.profile?.full_name || "Nexus mentor"}</h3>
+              <p>{m.headline}</p>
+              <MentorRating
+                average={m.rating?.average_rating}
+                count={m.rating?.rating_count}
+              />
+              <div className="tags">
+                {m.expertise.slice(0, 2).map((t) => (
+                  <span key={t}>{expertiseLabel(t)}</span>
+                ))}
+              </div>
+              <span className="mini-mentor-cta">
+                Meet your mentor <ArrowUpRight size={15} aria-hidden="true" />
+              </span>
+            </Link>
+          ))}
+          <Link className="button secondary" href="/mentors">
+            <Compass size={16} aria-hidden="true" /> Browse all mentors
+          </Link>
+          <div className="how-it-works-mini">
+            <span className="eyebrow">FROM STUCK TO STARTED</span>
+            <ol>
+              <li>
+                <span>01</span> Share your roadblock
+              </li>
+              <li>
+                <span>02</span> Find the right mentor
+              </li>
+              <li>
+                <span>03</span> Talk it through, together
+              </li>
+            </ol>
+          </div>
+        </aside>
       </div>
     </div>
   );

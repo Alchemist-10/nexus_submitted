@@ -61,3 +61,30 @@ export async function mentorDetails(id: string) {
     requestTime: Date.now(),
   };
 }
+
+// Reuse the booking flow's availability rules. A preview never reserves a slot.
+export async function nextMentorSlots(ids: string[]) {
+  if (!ids.length || !isConfigured())
+    return new Map<
+      string,
+      { starts_at: string; ends_at: string } | null | undefined
+    >();
+  const db = await createSupabaseServerClient();
+  const results = new Map<
+    string,
+    { starts_at: string; ends_at: string } | null | undefined
+  >();
+  // Bound parallel reads when the directory grows beyond the initial campus pilot.
+  for (let offset = 0; offset < ids.length; offset += 6) {
+    await Promise.all(
+      ids.slice(offset, offset + 6).map(async (id) => {
+        const { data, error } = await db
+          .rpc("get_available_slots", { p_mentor_id: id })
+          .order("starts_at")
+          .limit(1);
+        results.set(id, error ? undefined : data?.[0] || null);
+      }),
+    );
+  }
+  return results;
+}

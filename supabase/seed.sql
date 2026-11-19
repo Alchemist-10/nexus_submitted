@@ -1,4 +1,4 @@
--- Local demo accounts only. Run through `supabase db reset` on the local stack.
+-- Local development accounts only. Run through `supabase db reset` on the local stack.
 -- Password for both accounts: Nexus-local-demo-2026!
 create extension if not exists pgcrypto with schema extensions;
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password,
@@ -8,11 +8,11 @@ values
 ('00000000-0000-0000-0000-000000000000', '10000000-0000-4000-8000-000000000001',
  'authenticated', 'authenticated', 'mentor@nexus.test',
  extensions.crypt('Nexus-local-demo-2026!', extensions.gen_salt('bf')), now(),
- '{"provider":"email","providers":["email"]}', '{"full_name":"Demo Mentor"}', now(), now(), '', '', '', ''),
+ '{"provider":"email","providers":["email"]}', '{"full_name":"Aarav Mehta"}', now(), now(), '', '', '', ''),
 ('00000000-0000-0000-0000-000000000000', '20000000-0000-4000-8000-000000000002',
  'authenticated', 'authenticated', 'learner@nexus.test',
  extensions.crypt('Nexus-local-demo-2026!', extensions.gen_salt('bf')), now(),
- '{"provider":"email","providers":["email"]}', '{"full_name":"Demo Learner"}', now(), now(), '', '', '', '')
+ '{"provider":"email","providers":["email"]}', '{"full_name":"Riya Sharma"}', now(), now(), '', '', '', '')
 on conflict (id) do nothing;
 
 insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at)
@@ -22,7 +22,7 @@ on conflict (provider_id, provider) do nothing;
 
 insert into public.mentor_profiles (user_id, headline, bio, expertise)
 values ('10000000-0000-4000-8000-000000000001', 'Build your first dependable backend',
- 'Local demo profile for trying the introductory booking flow.', array['Backend', 'PostgreSQL', 'Interviews']);
+ 'Work through backend design, PostgreSQL, and project interview preparation with practical examples.', array['Backend', 'PostgreSQL', 'Interviews']);
 
 insert into public.availability_slots (mentor_id, starts_at, ends_at)
 select '10000000-0000-4000-8000-000000000001',

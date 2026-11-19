@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import postgres from "postgres";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 export interface DB {
   query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -74,14 +74,16 @@ export async function createDatabase(): Promise<DB> {
     grant usage on schema auth, public to anon, authenticated;
     grant execute on function auth.uid() to anon, authenticated;
   `);
-  const migration = await readFile(
-    new URL(
-      "../../supabase/migrations/202611190001_foundation.sql",
-      import.meta.url,
-    ),
-    "utf8",
+  const migrationDirectory = new URL(
+    "../../supabase/migrations/",
+    import.meta.url,
   );
-  await db.exec(migration);
+  const migrations = (await readdir(migrationDirectory))
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+  for (const file of migrations) {
+    await db.exec(await readFile(new URL(file, migrationDirectory), "utf8"));
+  }
   return db;
 }
 

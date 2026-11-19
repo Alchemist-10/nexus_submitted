@@ -22,7 +22,8 @@ Use Node.js 22.12 or newer.
 ```powershell
 cd D:\Projects_after_jun_2026\mainpro1\nexus
 npm ci
-Copy-Item .env.example .env.local
+# For a fresh checkout only: create .env.local if it does not exist
+if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm run dev
 ```
 
@@ -63,8 +64,10 @@ Slots are seeded two days ahead. Fresh signups receive confirmation mail in the 
 
 ## Option B: a new hosted Supabase project
 
+This workspace is connected to **nexus-rebuild** (`amgwmeqophjaprqemqym`) in **2026-after_nov**. The foundation migration is applied, and the ignored `.env.local` contains its public client configuration. Do not reapply the migration or overwrite that file when restarting this checkout.
+
 1. Create a new project using Supabase.
-2. Apply `supabase/migrations/202611190001_foundation.sql` using the SQL editor, or link the project with the CLI and run `supabase db push`. Apply the migration once. Keep local demo seeds out of production.
+2. Apply `supabase/migrations/20261119045345_foundation.sql` using the SQL editor, or link the project with the CLI and run `supabase db push`. Apply the migration once. Keep local demo seeds out of production.
 3. Copy the project's API URL and publishable/anon key into `.env.local`.
 4. In Auth URL Configuration, set Site URL to `http://localhost:3000` for development. Allow `http://localhost:3000/auth/callback`.
 5. Enable email signup and email confirmation. Set a password minimum of at least 12 characters. Confirm your email before signing in.
@@ -98,7 +101,7 @@ npm run build
 
 The default tests execute the real migration, constraints, RLS policies, and functions in PGlite PostgreSQL. Only the Supabase-managed auth schema/identity context is simulated in tests. Coverage includes unauthorized writes, row privacy, duplicate requests, repeat trials, cancellations, cross-role overlapping sessions, transaction rollback, join-window privacy, and validation.
 
-PGlite has one backend, so the independent-connection race test is deliberately skipped there. It does not validate Supabase's actual email/Auth/PostgREST stack. CI also runs the suite on a disposable PostgreSQL 17 service to exercise independent connections. [The verified CI run](https://github.com/Alchemist-10/nexus_submitted/actions/runs/44459308194) passed all 29 tests on PostgreSQL 17, including the concurrent booking race, as well as type/lint/format checks and the production build. Hosted authentication and booking verification still require access to the selected Supabase project.
+PGlite has one backend, so the independent-connection race test is deliberately skipped there. It does not validate Supabase's actual email/Auth/PostgREST stack. CI also runs the suite on a disposable PostgreSQL 17 service to exercise independent connections. [The verified CI run](https://github.com/Alchemist-10/nexus_submitted/actions/runs/44459308194) passed all 29 tests on PostgreSQL 17, including the concurrent booking race, as well as type/lint/format checks and the production build. Hosted password authentication, booking authorization, concurrent reservation, and the two-account browser booking journey have also passed against the selected project. See [verification notes](docs/verification.md) for scope and remaining email-delivery verification.
 
 To run that mode yourself, first create a disposable localhost database named `nexus_test_local` and use an appropriately privileged test user:
 
@@ -130,7 +133,7 @@ tests/                   SQL integration and validation tests
 docs/phase-one-design.md Approved scope, defaults, and implementation plan
 ```
 
-`src/lib/database.types.ts` is a schema-derived contract maintained with this migration, not output claimed to have been generated from a running remote database. After applying the schema, the Supabase CLI can generate full types using `npx supabase gen types typescript --local` (or `--project-id YOUR_ID`). Review the output and replace that file; no service-role credentials should appear in generated types.
+`src/lib/database.generated.ts` was generated from the running hosted database after migration. `src/lib/database.types.ts` exports application aliases from that generated schema. Regenerate the former after future migrations using the Supabase integration or `npx supabase gen types typescript --project-id YOUR_ID`; review the output before committing.
 
 The database is authoritative: narrow RPCs validate the authenticated identity and reserve/cancel/complete sessions. General table writes are revoked. Participant reservations use GiST exclusion constraints, so an account cannot be a learner in one overlapping booking and a mentor in another. Meeting data has no direct API read grant. Definer functions use an empty search path, explicit object names, restricted execute grants, and ownership checks.
 

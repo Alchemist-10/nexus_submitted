@@ -2,22 +2,22 @@
 
 ## Completed locally
 
-| Check                                     | Result                                                                                                  |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| TypeScript                                | Passed, errors enforced                                                                                 |
-| ESLint                                    | Passed, zero warnings                                                                                   |
-| Prettier                                  | Passed                                                                                                  |
-| Production build                          | Passed with the unconfigured-backend setup state                                                        |
-| SQL and validation suite                  | 28 passed, 1 skipped                                                                                    |
-| Independent-connection PostgreSQL race    | Configured in CI; not executed on this machine because no PostgreSQL server or Docker daemon is running |
-| Package dependency tree                   | Valid, no invalid peer dependencies                                                                     |
-| Homepage automated WCAG A/AA audit        | Zero reported violations; some overlapping decorative elements require manual contrast review           |
-| Mobile signup automated WCAG A/AA audit   | Zero reported violations, no incomplete checks                                                          |
-| Mobile layout                             | No horizontal overflow at 390 px on the homepage and signup screen                                      |
-| Browser errors                            | None reported on checked pages                                                                          |
-| Signup without backend configuration      | Clear error displayed; no fake account was created                                                      |
-| Protected dashboard without configuration | Redirects to setup                                                                                      |
-| Original source folder                    | Git working tree unchanged                                                                              |
+| Check                                     | Result                                                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| TypeScript                                | Passed, errors enforced                                                                             |
+| ESLint                                    | Passed, zero warnings                                                                               |
+| Prettier                                  | Passed                                                                                              |
+| Production build                          | Passed with the unconfigured-backend setup state                                                    |
+| SQL and validation suite                  | 28 passed, 1 skipped                                                                                |
+| Independent-connection PostgreSQL race    | Passed in GitHub Actions against PostgreSQL 17; local PGlite still skips this multi-connection test |
+| Package dependency tree                   | Valid, no invalid peer dependencies                                                                 |
+| Homepage automated WCAG A/AA audit        | Zero reported violations; some overlapping decorative elements require manual contrast review       |
+| Mobile signup automated WCAG A/AA audit   | Zero reported violations, no incomplete checks                                                      |
+| Mobile layout                             | No horizontal overflow at 390 px on the homepage and signup screen                                  |
+| Browser errors                            | None reported on checked pages                                                                      |
+| Signup without backend configuration      | Clear error displayed; no fake account was created                                                  |
+| Protected dashboard without configuration | Redirects to setup                                                                                  |
+| Original source folder                    | Git working tree unchanged                                                                          |
 
 The SQL suite executes the actual migration, RLS policies, constraints, and RPCs in embedded PostgreSQL. It tests authenticated identity context through test-only Supabase auth scaffolding. These results do not claim that Supabase Auth email delivery or a complete hosted browser booking has passed.
 
@@ -29,6 +29,6 @@ After project creation: inspect its public tables, apply the migration, inspect 
 
 ## GitHub integration
 
-The clean rebuild is pushed to `Alchemist-10/nexus_submitted` on `rebuild/foundation`, with [pull request 1](https://github.com/Alchemist-10/nexus_submitted/pull/1). The old main is preserved at `legacy/pre-rebuild-2026-11-19` and remains in the merged commit history. Main-branch integration follows passing CI.
+The clean rebuild was merged into `Alchemist-10/nexus_submitted/main` through [pull request 1](https://github.com/Alchemist-10/nexus_submitted/pull/1), merge commit `041e98e284a50be1390cd0b7e371da8c929f2db1`. The old main is preserved at `legacy/pre-rebuild-2026-11-19` and remains in the merged commit history.
 
-The first native PostgreSQL run exposed timestamp rounding in the adjacency test fixture: JavaScript Date parsing dropped PostgreSQL microseconds. The corrected fixture reads the exact endpoint as text. The native PostgreSQL suite and independent-connection race are being rerun in GitHub Actions; the database overlap constraint was retained.
+The first native PostgreSQL run exposed timestamp rounding in the adjacency test fixture: JavaScript Date parsing dropped PostgreSQL microseconds. The corrected fixture reads the exact endpoint as text; the database overlap constraint was retained. [The successful CI run](https://github.com/Alchemist-10/nexus_submitted/actions/runs/44459308194) passed type checking, lint, formatting, the embedded suite, all 29 tests on PostgreSQL 17 including the independent-connection race, and the production build.

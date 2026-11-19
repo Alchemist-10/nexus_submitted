@@ -28,9 +28,11 @@ const trusted = <T>(fn: (actor: DB) => Promise<T>) =>
   });
 async function intro(learner = people.learner, mentor = people.mentor) {
   await db.query(
-    `with s as (
+    `with t as (
+    select now()-interval '2 days'-(select count(*) from bookings where mentor_id=$1)*interval '1 hour' as starts_at
+  ), s as (
     insert into availability_slots(mentor_id,starts_at,ends_at,is_open)
-    values($1,now()-interval '2 days',now()-interval '2 days'+interval '30 minutes',false) returning *
+    select $1,t.starts_at,t.starts_at+interval '30 minutes',false from t returning *
   ) insert into bookings(slot_id,mentor_id,learner_id,request_key,starts_at,ends_at,status)
     select id,mentor_id,$2,$3,starts_at,ends_at,'completed' from s`,
     [mentor, learner, key()],

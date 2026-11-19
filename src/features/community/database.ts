@@ -5,11 +5,17 @@ export type Answer = Database["public"]["Tables"]["community_answers"]["Row"];
 // inner joins, NOT NULL columns, counts, and EXISTS enforce these contracts.
 export type PostSummary = Post & {
   author_name: string;
+  author_username: string;
+  author_avatar_variant: number;
+  author_avatar_path: string | null;
   upvotes: number;
   answer_count: number;
 };
 export type AnswerSummary = Answer & {
   author_name: string;
+  author_username: string;
+  author_avatar_variant: number;
+  author_avatar_path: string | null;
   upvotes: number;
   is_mentor: boolean;
 };

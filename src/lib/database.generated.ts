@@ -76,6 +76,13 @@ export type Database = {
             foreignKeyName: "booking_events_actor_id_fkey";
             columns: ["actor_id"];
             isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "booking_events_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -148,6 +155,13 @@ export type Database = {
             foreignKeyName: "booking_participants_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "booking_participants_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -198,8 +212,22 @@ export type Database = {
             foreignKeyName: "bookings_learner_id_fkey";
             columns: ["learner_id"];
             isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "bookings_learner_id_fkey";
+            columns: ["learner_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_mentor_id_fkey";
+            columns: ["mentor_id"];
+            isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
           },
           {
             foreignKeyName: "bookings_mentor_id_fkey";
@@ -254,6 +282,13 @@ export type Database = {
           post_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "community_answers_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
           {
             foreignKeyName: "community_answers_author_id_fkey";
             columns: ["author_id"];
@@ -333,6 +368,13 @@ export type Database = {
             foreignKeyName: "community_posts_author_id_fkey";
             columns: ["author_id"];
             isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "community_posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -374,6 +416,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "community_posts";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
           },
           {
             foreignKeyName: "community_reports_reporter_id_fkey";
@@ -439,6 +488,13 @@ export type Database = {
             foreignKeyName: "community_votes_voter_id_fkey";
             columns: ["voter_id"];
             isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "community_votes_voter_id_fkey";
+            columns: ["voter_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -470,6 +526,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "mentor_profiles_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
           {
             foreignKeyName: "mentor_profiles_user_id_fkey";
             columns: ["user_id"];
@@ -507,18 +570,27 @@ export type Database = {
       };
       profiles: {
         Row: {
+          avatar_path: string | null;
+          avatar_variant: number;
+          bio: string;
           created_at: string;
           full_name: string;
           id: string;
           username: string;
         };
         Insert: {
+          avatar_path?: string | null;
+          avatar_variant?: number;
+          bio?: string;
           created_at?: string;
           full_name: string;
           id: string;
           username: string;
         };
         Update: {
+          avatar_path?: string | null;
+          avatar_variant?: number;
+          bio?: string;
           created_at?: string;
           full_name?: string;
           id?: string;
@@ -530,8 +602,11 @@ export type Database = {
     Views: {
       community_answer_summaries: {
         Row: {
+          author_avatar_path: string | null;
+          author_avatar_variant: number | null;
           author_id: string | null;
           author_name: string | null;
+          author_username: string | null;
           body: string | null;
           created_at: string | null;
           id: string | null;
@@ -540,6 +615,13 @@ export type Database = {
           upvotes: number | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "community_answers_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
           {
             foreignKeyName: "community_answers_author_id_fkey";
             columns: ["author_id"];
@@ -567,8 +649,11 @@ export type Database = {
         Row: {
           accepted_answer_id: string | null;
           answer_count: number | null;
+          author_avatar_path: string | null;
+          author_avatar_variant: number | null;
           author_id: string | null;
           author_name: string | null;
+          author_username: string | null;
           body: string | null;
           category: string | null;
           created_at: string | null;
@@ -598,10 +683,38 @@ export type Database = {
             foreignKeyName: "community_posts_author_id_fkey";
             columns: ["author_id"];
             isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "community_posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
+      };
+      member_activity_counts: {
+        Row: {
+          answer_count: number | null;
+          helpful_answer_count: number | null;
+          post_count: number | null;
+          profile_id: string | null;
+        };
+        Insert: {
+          answer_count?: never;
+          helpful_answer_count?: never;
+          post_count?: never;
+          profile_id?: string | null;
+        };
+        Update: {
+          answer_count?: never;
+          helpful_answer_count?: never;
+          post_count?: never;
+          profile_id?: string | null;
+        };
+        Relationships: [];
       };
     };
     Functions: {
@@ -756,6 +869,16 @@ export type Database = {
       };
       set_booking_meeting: {
         Args: { p_booking_id: string; p_join_url: string };
+        Returns: undefined;
+      };
+      update_public_profile: {
+        Args: {
+          p_avatar_path: string;
+          p_avatar_variant: number;
+          p_bio: string;
+          p_full_name: string;
+          p_username: string;
+        };
         Returns: undefined;
       };
     };

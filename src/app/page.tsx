@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
+import { currentProfile } from "@/features/profiles/queries";
 import {
   ArrowUpRight,
   MessageSquare,
@@ -21,6 +23,7 @@ export default async function CommunityPage({
   }>;
 }) {
   const filters = await searchParams;
+  const profile = await currentProfile();
   const { posts, hasMore, unavailable } = await loadFeed(filters);
   const page = Math.max(
     1,
@@ -77,6 +80,22 @@ export default async function CommunityPage({
       </section>
       <div className="feed-layout">
         <aside className="feed-sidebar">
+          {profile && (
+            <Link className="my-profile-card" href="/profile">
+              <Avatar
+                id={profile.id}
+                name={profile.full_name}
+                path={profile.avatar_path}
+                variant={profile.avatar_variant}
+                size="medium"
+              />
+              <div>
+                <small>YOUR PROFILE</small>
+                <strong>{profile.full_name}</strong>
+                <span>My posts & answers</span>
+              </div>
+            </Link>
+          )}
           <span className="eyebrow">EXPLORE</span>
           <nav aria-label="Community categories">
             <Link
@@ -183,7 +202,19 @@ export default async function CommunityPage({
                   <span>
                     {categories[post.category as keyof typeof categories]}
                   </span>
-                  <span>{post.author_name}</span>
+                  <Link
+                    className="author-link"
+                    href={`/profile/${post.author_id}`}
+                  >
+                    <Avatar
+                      id={post.author_id}
+                      name={post.author_name}
+                      path={post.author_avatar_path}
+                      variant={post.author_avatar_variant}
+                      size="tiny"
+                    />
+                    <span>{post.author_name}</span>
+                  </Link>
                   <span>
                     {new Date(post.created_at).toLocaleDateString("en-IN", {
                       month: "short",

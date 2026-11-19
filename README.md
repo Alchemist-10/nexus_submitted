@@ -4,6 +4,9 @@ A clean rebuild of the Nexus mentorship platform. The original project stays in 
 
 ## What works
 
+- Identifiable member profiles with personal Posts/Answers, public contribution counts, and owner-only editing.
+- Distinct default illustrated avatars for every account, plus optional personal photo uploads.
+
 - Community feed with latest/top/unanswered views, category/topic filters, title search, and pagination.
 - Learning requests with context, the specific point of confusion, topic tags, and up to three public raster images.
 - Answers, unique reversible upvotes, author-accepted answers, owner deletion, and private reports for manual review.
@@ -95,6 +98,12 @@ Set the actual HTTPS deployment URL in both Supabase and `NEXT_PUBLIC_APP_URL` b
 9. Cancelling before the start time restores the introduction. A completed call consumes the free introduction with that mentor. Another mentor has a separate allowance.
 
 A member can both mentor and learn. Public profile data includes name and username, not account email. This milestone has no elevated admin UI. No-show and paid cancellation policies will be designed with the payment milestone; a confirmed introduction continues to reserve the allowance until a supported transition occurs.
+
+## Your profile
+
+Click your picture/name in the header or open `/profile` to find your own Posts and Answers. Public author links lead to that person's activity; the Community feed remains shared. Profile settings, session shortcuts, and mentor setup shortcuts appear only to the owner. Public profiles contain no account email or booking history.
+
+In **Edit profile**, change your display name, unique handle, and short bio. Every account starts with a stable illustrated avatar; **Try another avatar** changes the default. You can also upload a PNG/JPEG/WebP photo up to 3 MiB. Profile photos and bios are public. Selecting a default and saving removes the prior uploaded photo. See [profile verification](docs/profiles-verification.md) for checks and boundaries.
 
 ## Community and mentor matching
 

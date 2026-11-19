@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { MentorRating } from "@/components/mentor-rating";
 import { ArrowUpRight } from "lucide-react";
 import { listMentors } from "@/features/mentorship/queries";
@@ -28,12 +29,15 @@ export default async function MentorDirectory() {
               key={m.user_id}
             >
               <div className="mentor-top">
-                <span className="avatar">
-                  {m.profile?.full_name.slice(0, 1)}
-                </span>
+                <Avatar
+                  id={m.user_id}
+                  name={m.profile?.full_name || "Mentor"}
+                  path={m.profile?.avatar_path}
+                  variant={m.profile?.avatar_variant}
+                />
                 <ArrowUpRight size={20} />
               </div>
-              <h3>{m.profile?.full_name}</h3>
+              <h2>{m.profile?.full_name}</h2>
               <p>{m.headline}</p>
               <MentorRating
                 average={m.rating?.average_rating}

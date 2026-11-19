@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { MentorRating } from "@/components/mentor-rating";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
@@ -41,7 +42,16 @@ export default async function PostPage({
               <span>
                 {categories[post.category as keyof typeof categories]}
               </span>
-              <span>Posted by {post.author_name}</span>
+              <Link className="author-link" href={`/profile/${post.author_id}`}>
+                <Avatar
+                  id={post.author_id}
+                  name={post.author_name}
+                  path={post.author_avatar_path}
+                  variant={post.author_avatar_variant}
+                  size="tiny"
+                />
+                <span>Posted by {post.author_name}</span>
+              </Link>
               <span>
                 {new Date(post.created_at).toLocaleDateString("en-IN", {
                   day: "numeric",
@@ -132,7 +142,19 @@ export default async function PostPage({
                   key={answer.id}
                 >
                   <div className="post-meta">
-                    <strong>{answer.author_name}</strong>
+                    <Link
+                      className="author-link"
+                      href={`/profile/${answer.author_id}`}
+                    >
+                      <Avatar
+                        id={answer.author_id}
+                        name={answer.author_name}
+                        path={answer.author_avatar_path}
+                        variant={answer.author_avatar_variant}
+                        size="small"
+                      />
+                      <strong>{answer.author_name}</strong>
+                    </Link>
                     {answer.is_mentor && (
                       <Link
                         className="mentor-label"
@@ -305,9 +327,12 @@ export default async function PostPage({
               mentors.map((mentor) => (
                 <article className="recommended-card" key={mentor.mentor_id}>
                   <div className="mentor-identity">
-                    <span className="avatar">
-                      {mentor.full_name.slice(0, 1)}
-                    </span>
+                    <Avatar
+                      id={mentor.mentor_id}
+                      name={mentor.full_name}
+                      path={mentor.profile?.avatar_path}
+                      variant={mentor.profile?.avatar_variant}
+                    />
                     <div>
                       <h3>{mentor.full_name}</h3>
                       <p>{mentor.headline}</p>

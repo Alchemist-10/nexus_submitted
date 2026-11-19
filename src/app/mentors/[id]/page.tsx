@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { MentorRating } from "@/components/mentor-rating";
 import { randomUUID } from "node:crypto";
 import { notFound, redirect } from "next/navigation";
@@ -48,9 +49,18 @@ export default async function MentorPage({
       </Link>
       <div className="detail-grid">
         <section className="mentor-detail">
-          <span className="avatar large">{profile.full_name.slice(0, 1)}</span>
+          <Avatar
+            id={profile.id}
+            name={profile.full_name}
+            path={profile.avatar_path}
+            variant={profile.avatar_variant}
+            size="large"
+          />
           <span className="eyebrow">MEET YOUR MENTOR</span>
           <h1>{profile.full_name}</h1>
+          <Link className="text-link" href={`/profile/${profile.id}`}>
+            Community profile: @{profile.username}
+          </Link>
           <h2>{mentor.headline}</h2>
           <MentorRating
             average={rating?.average_rating}

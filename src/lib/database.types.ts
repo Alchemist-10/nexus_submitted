@@ -5,8 +5,15 @@ export type Database = Omit<Generated, "public"> & {
   public: Omit<Generated["public"], "Functions"> & {
     Functions: Omit<
       Generated["public"]["Functions"],
-      "accept_community_answer"
+      "accept_community_answer" | "update_public_profile"
     > & {
+      update_public_profile: {
+        Args: Omit<
+          Generated["public"]["Functions"]["update_public_profile"]["Args"],
+          "p_avatar_path"
+        > & { p_avatar_path: string | null };
+        Returns: undefined;
+      };
       accept_community_answer: {
         Args: { p_post_id: string; p_answer_id: string | null };
         Returns: undefined;

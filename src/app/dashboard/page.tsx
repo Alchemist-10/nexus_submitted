@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { SessionRefresh } from "@/components/session-refresh";
 import { EndSessionForm } from "@/components/end-session-form";
 import { RateMentorForm } from "@/components/rate-mentor-form";
@@ -47,6 +48,7 @@ export default async function DashboardPage({
             const rating = ratings.find((r) => r.booking_id === booking.id);
             const isMentor = booking.mentor_id === user.id;
             const otherId = isMentor ? booking.learner_id : booking.mentor_id;
+            const person = profiles?.find((p) => p.id === otherId);
             const otherName =
               profiles?.find((profile) => profile.id === otherId)?.full_name ||
               "Nexus member";
@@ -63,7 +65,18 @@ export default async function DashboardPage({
                     {booking.status}
                   </span>
                 </div>
-                <h2>{otherName}</h2>
+                <div className="session-person">
+                  <Avatar
+                    id={otherId}
+                    name={otherName}
+                    path={person?.avatar_path}
+                    variant={person?.avatar_variant}
+                    size="small"
+                  />
+                  <h2>
+                    <Link href={`/profile/${otherId}`}>{otherName}</Link>
+                  </h2>
+                </div>
                 {booking.source_post_id && (
                   <Link
                     className="text-link booking-context"

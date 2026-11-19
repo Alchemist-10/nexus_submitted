@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  paymentConfigured,
+  processPaymentJobs,
+} from "@/features/payments/server";
+import {
   bookingSchema,
   ratingSchema,
   idSchema,
@@ -139,13 +143,23 @@ export async function cancelBooking(
   const parsed = idSchema.safeParse(form.get("bookingId"));
   if (!parsed.success) return { error: "Invalid booking." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("cancel_free_intro", {
+  const { data, error } = await supabase.rpc("cancel_free_intro", {
     p_booking_id: parsed.data,
   });
   if (error) return { error: databaseError(error.message) };
+  const paid = data?.[0]?.kind === "paid";
+  if (paid && paymentConfigured()) {
+    try {
+      await processPaymentJobs(parsed.data);
+    } catch {
+      /* The durable refund job remains queued for the worker. */
+    }
+  }
   refreshed();
   return {
-    success: "Booking cancelled. The free introduction is available again.",
+    success: paid
+      ? "Session cancelled. Any captured payment is tracked for a full refund; check your payment status for progress."
+      : "Booking cancelled. The free introduction is available again.",
   };
 }
 

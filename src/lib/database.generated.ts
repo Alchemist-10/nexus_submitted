@@ -167,11 +167,41 @@ export type Database = {
           },
         ];
       };
+      booking_payment_status: {
+        Row: {
+          booking_id: string;
+          state: string;
+          updated_at: string;
+        };
+        Insert: {
+          booking_id: string;
+          state: string;
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string;
+          state?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "booking_payment_status_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       bookings: {
         Row: {
+          amount_paise: number;
           created_at: string;
+          currency: string;
           ends_at: string;
+          hold_expires_at: string | null;
           id: string;
+          kind: string;
           learner_id: string;
           mentor_id: string;
           request_key: string;
@@ -182,9 +212,13 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          amount_paise?: number;
           created_at?: string;
+          currency?: string;
           ends_at: string;
+          hold_expires_at?: string | null;
           id?: string;
+          kind?: string;
           learner_id: string;
           mentor_id: string;
           request_key: string;
@@ -195,9 +229,13 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          amount_paise?: number;
           created_at?: string;
+          currency?: string;
           ends_at?: string;
+          hold_expires_at?: string | null;
           id?: string;
+          kind?: string;
           learner_id?: string;
           mentor_id?: string;
           request_key?: string;
@@ -507,6 +545,7 @@ export type Database = {
           expertise: string[];
           headline: string;
           is_listed: boolean;
+          session_price_paise: number | null;
           user_id: string;
         };
         Insert: {
@@ -515,6 +554,7 @@ export type Database = {
           expertise?: string[];
           headline: string;
           is_listed?: boolean;
+          session_price_paise?: number | null;
           user_id: string;
         };
         Update: {
@@ -523,6 +563,7 @@ export type Database = {
           expertise?: string[];
           headline?: string;
           is_listed?: boolean;
+          session_price_paise?: number | null;
           user_id?: string;
         };
         Relationships: [
@@ -725,9 +766,13 @@ export type Database = {
       book_free_intro: {
         Args: { p_request_key: string; p_slot_id: string };
         Returns: {
+          amount_paise: number;
           created_at: string;
+          currency: string;
           ends_at: string;
+          hold_expires_at: string | null;
           id: string;
+          kind: string;
           learner_id: string;
           mentor_id: string;
           request_key: string;
@@ -747,9 +792,13 @@ export type Database = {
       book_post_intro: {
         Args: { p_post_id: string; p_request_key: string; p_slot_id: string };
         Returns: {
+          amount_paise: number;
           created_at: string;
+          currency: string;
           ends_at: string;
+          hold_expires_at: string | null;
           id: string;
+          kind: string;
           learner_id: string;
           mentor_id: string;
           request_key: string;
@@ -769,9 +818,13 @@ export type Database = {
       cancel_free_intro: {
         Args: { p_booking_id: string };
         Returns: {
+          amount_paise: number;
           created_at: string;
+          currency: string;
           ends_at: string;
+          hold_expires_at: string | null;
           id: string;
+          kind: string;
           learner_id: string;
           mentor_id: string;
           request_key: string;
@@ -793,9 +846,13 @@ export type Database = {
       complete_free_intro: {
         Args: { p_booking_id: string };
         Returns: {
+          amount_paise: number;
           created_at: string;
+          currency: string;
           ends_at: string;
+          hold_expires_at: string | null;
           id: string;
+          kind: string;
           learner_id: string;
           mentor_id: string;
           request_key: string;
@@ -847,6 +904,55 @@ export type Database = {
           rating_count: number;
         }[];
       };
+      payment_attach_order: {
+        Args: {
+          p_amount_paise: number;
+          p_booking_id: string;
+          p_currency: string;
+          p_order_id: string;
+          p_token: string;
+        };
+        Returns: undefined;
+      };
+      payment_claim_jobs: {
+        Args: { p_booking_id?: string; p_limit?: number };
+        Returns: Json[];
+      };
+      payment_claim_order: { Args: { p_booking_id: string }; Returns: Json };
+      payment_finish_job: {
+        Args: {
+          p_done: boolean;
+          p_error?: string;
+          p_job_id: string;
+          p_token: string;
+        };
+        Returns: undefined;
+      };
+      payment_get_context: { Args: { p_booking_id: string }; Returns: Json };
+      payment_lookup_order: { Args: { p_order_id: string }; Returns: string };
+      payment_record_capture: {
+        Args: {
+          p_amount_paise: number;
+          p_booking_id: string;
+          p_currency: string;
+          p_fully_refunded?: boolean;
+          p_order_id: string;
+          p_payment_id: string;
+        };
+        Returns: undefined;
+      };
+      payment_record_refund: {
+        Args: {
+          p_payment_id: string;
+          p_processed: boolean;
+          p_refund_id: string;
+        };
+        Returns: undefined;
+      };
+      payment_webhook_event: {
+        Args: { p_complete?: boolean; p_event_id: string; p_order_id: string };
+        Returns: string;
+      };
       rate_mentor: {
         Args: { p_booking_id: string; p_score: number };
         Returns: undefined;
@@ -863,12 +969,42 @@ export type Database = {
           next_available: string;
         }[];
       };
+      reserve_paid_session: {
+        Args: { p_post_id?: string; p_request_key: string; p_slot_id: string };
+        Returns: {
+          amount_paise: number;
+          created_at: string;
+          currency: string;
+          ends_at: string;
+          hold_expires_at: string | null;
+          id: string;
+          kind: string;
+          learner_id: string;
+          mentor_id: string;
+          request_key: string;
+          slot_id: string;
+          source_post_id: string | null;
+          starts_at: string;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "bookings";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       save_mentor_profile: {
         Args: { p_bio: string; p_expertise: string[]; p_headline: string };
         Returns: undefined;
       };
       set_booking_meeting: {
         Args: { p_booking_id: string; p_join_url: string };
+        Returns: undefined;
+      };
+      set_mentor_price: {
+        Args: { p_amount_paise: number };
         Returns: undefined;
       };
       update_public_profile: {

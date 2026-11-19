@@ -29,10 +29,22 @@ export async function loadMyBookings() {
         )
     : { data: [], error: null };
   if (ratingError) throw new Error("Your session ratings could not be loaded.");
+  const { data: payments, error: paymentError } = bookings.length
+    ? await supabase
+        .from("booking_payment_status")
+        .select("*")
+        .in(
+          "booking_id",
+          bookings.map((b) => b.id),
+        )
+    : { data: [], error: null };
+  if (paymentError)
+    throw new Error("Your payment statuses could not be loaded.");
   return {
     bookings,
     profiles,
     ratings: ratings || [],
+    payments: payments || [],
     requestTime: Date.now(),
   };
 }

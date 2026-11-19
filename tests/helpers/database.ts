@@ -67,6 +67,7 @@ export async function createDatabase(): Promise<DB> {
   await db.exec(`
     do $$ begin create role anon; exception when duplicate_object then null; end $$;
     do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
+    do $$ begin create role service_role; exception when duplicate_object then null; end $$;
     create schema storage;
     create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text unique);
@@ -77,7 +78,7 @@ export async function createDatabase(): Promise<DB> {
     create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb not null default '{}');
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-    grant usage on schema auth, public to anon, authenticated;
+    grant usage on schema auth, public to anon, authenticated, service_role;
     grant execute on function auth.uid() to anon, authenticated;
   `);
   const migrationDirectory = new URL(

@@ -9,6 +9,7 @@ import { loadMyBookings } from "@/features/bookings/queries";
 import { ActionForm } from "@/components/action-form";
 import { TimeRange } from "@/components/time-range";
 import { cancelBooking, saveMeeting } from "@/features/bookings/actions";
+import { formatINR, paymentStateLabel } from "@/features/payments/shared";
 
 export default async function DashboardPage({
   searchParams,
@@ -16,7 +17,8 @@ export default async function DashboardPage({
   searchParams: Promise<{ notice?: string }>;
 }) {
   const user = await requireUser();
-  const { bookings, profiles, ratings, requestTime } = await loadMyBookings();
+  const { bookings, profiles, ratings, payments, requestTime } =
+    await loadMyBookings();
   const { notice } = await searchParams;
   return (
     <div className="shell page-space">
@@ -24,13 +26,19 @@ export default async function DashboardPage({
         <div>
           <span className="eyebrow">YOUR CONNECTIONS</span>
           <h1>Room to grow.</h1>
-          <p className="lead">Your introductions, all in one place.</p>
+          <p className="lead">Your mentorship sessions, all in one place.</p>
         </div>
         <Link className="button secondary" href="/mentors">
           Find a mentor <ArrowUpRight size={16} />
         </Link>
       </div>
-      <SessionRefresh active={bookings.some((b) => b.status === "confirmed")} />
+      <SessionRefresh
+        active={
+          bookings.some((b) =>
+            ["confirmed", "awaiting_payment"].includes(b.status),
+          ) || payments.some((p) => p.state === "refund_pending")
+        }
+      />
       {notice === "booked" && (
         <p className="feedback success" role="status">
           Your free introduction is confirmed. Your mentor can now add a private
@@ -46,6 +54,8 @@ export default async function DashboardPage({
         <div className="bookings-grid">
           {bookings.map((booking) => {
             const rating = ratings.find((r) => r.booking_id === booking.id);
+            const payment = payments.find((p) => p.booking_id === booking.id);
+            const paid = booking.kind === "paid";
             const isMentor = booking.mentor_id === user.id;
             const otherId = isMentor ? booking.learner_id : booking.mentor_id;
             const person = profiles?.find((p) => p.id === otherId);
@@ -59,10 +69,10 @@ export default async function DashboardPage({
               <article className="panel booking-card" key={booking.id}>
                 <div className="booking-card-top">
                   <span className="eyebrow">
-                    {isMentor ? "YOU ARE MENTORING" : "YOUR INTRODUCTION"}
+                    {isMentor ? "YOU ARE MENTORING" : "YOUR SESSION"}
                   </span>
                   <span className={`badge ${booking.status}`}>
-                    {booking.status}
+                    {booking.status.replaceAll("_", " ")}
                   </span>
                 </div>
                 <div className="session-person">
@@ -88,8 +98,33 @@ export default async function DashboardPage({
                 )}
                 <TimeRange start={booking.starts_at} end={booking.ends_at} />
                 <p className="muted">
-                  <Video size={15} /> Free introductory video call
+                  <Video size={15} />{" "}
+                  {paid
+                    ? `Paid video session · ${formatINR(booking.amount_paise)}`
+                    : "Free introductory video call"}
                 </p>
+                {payment && (
+                  <p className="payment-status">
+                    {paymentStateLabel[payment.state]}
+                  </p>
+                )}
+                {paid && !isMentor && (
+                  <Link className="text-link" href={`/checkout/${booking.id}`}>
+                    {booking.status === "awaiting_payment"
+                      ? "Resume checkout"
+                      : "View payment status"}{" "}
+                    <ArrowUpRight size={14} />
+                  </Link>
+                )}
+                {booking.status === "awaiting_payment" && (
+                  <ActionForm
+                    action={cancelBooking}
+                    submitLabel="Cancel checkout"
+                    secondary
+                  >
+                    <input type="hidden" name="bookingId" value={booking.id} />
+                  </ActionForm>
+                )}
                 {booking.status === "completed" &&
                   (rating ? (
                     <p className="saved-session-rating">
@@ -134,9 +169,11 @@ export default async function DashboardPage({
                     )}
                     {future && (
                       <details>
-                        <summary>Cancel this introduction</summary>
+                        <summary>Cancel this session</summary>
                         <p className="muted">
-                          The free introduction and slot become available again.
+                          {paid
+                            ? "Cancel before the start for a full refund. Processing is shown in your payment status."
+                            : "The free introduction and slot become available again."}
                         </p>
                         <ActionForm
                           action={cancelBooking}

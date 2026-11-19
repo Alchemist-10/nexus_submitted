@@ -5,8 +5,12 @@ export type Database = Omit<Generated, "public"> & {
   public: Omit<Generated["public"], "Functions"> & {
     Functions: Omit<
       Generated["public"]["Functions"],
-      "accept_community_answer" | "update_public_profile"
+      "accept_community_answer" | "update_public_profile" | "set_mentor_price"
     > & {
+      set_mentor_price: {
+        Args: { p_amount_paise: number | null };
+        Returns: undefined;
+      };
       update_public_profile: {
         Args: Omit<
           Generated["public"]["Functions"]["update_public_profile"]["Args"],

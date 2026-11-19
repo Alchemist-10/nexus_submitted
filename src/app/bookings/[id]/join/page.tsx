@@ -42,7 +42,7 @@ export default async function JoinPage({
     <div className="shell narrow page-space">
       <div className="panel join-panel">
         <Video size={32} />
-        <span className="eyebrow">YOUR INTRODUCTION</span>
+        <span className="eyebrow">YOUR SESSION</span>
         <h1>
           {completed
             ? "Session complete."

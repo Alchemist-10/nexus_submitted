@@ -6,6 +6,7 @@ import { ActionForm } from "@/components/action-form";
 import { AvailabilityForm } from "@/components/availability-form";
 import { TimeRange } from "@/components/time-range";
 import { saveMentor, closeSlot } from "@/features/bookings/actions";
+import { saveMentorPrice } from "@/features/payments/actions";
 
 export default async function MentorStudioPage() {
   const user = await requireUser();
@@ -85,8 +86,44 @@ export default async function MentorStudioPage() {
           </ActionForm>
         </section>
         <div>
+          {mentor && (
+            <section className="panel spaced">
+              <h2>Paid follow-up sessions</h2>
+              <p className="muted">
+                Each student&apos;s first call with you is free. After
+                completing it, they can book a follow-up at your price.
+              </p>
+              <ActionForm
+                action={saveMentorPrice}
+                submitLabel="Save session price"
+              >
+                <label>
+                  Price per session (INR)
+                  <input
+                    name="price"
+                    inputMode="decimal"
+                    defaultValue={
+                      mentor.session_price_paise === null
+                        ? ""
+                        : String(mentor.session_price_paise / 100)
+                    }
+                    placeholder="199"
+                    maxLength={8}
+                  />
+                  <small>
+                    ₹1–₹25,000 per published slot. Leave blank to disable paid
+                    follow-ups. Existing checkout prices stay fixed.
+                  </small>
+                </label>
+              </ActionForm>
+              <p className="muted">
+                Razorpay test mode. No real money or mentor payouts in this
+                test.
+              </p>
+            </section>
+          )}
           <section className="panel">
-            <h2>Open an introductory slot</h2>
+            <h2>Open a session slot</h2>
             {mentor ? (
               <AvailabilityForm />
             ) : (

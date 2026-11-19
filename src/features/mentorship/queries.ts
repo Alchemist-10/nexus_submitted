@@ -53,5 +53,11 @@ export async function mentorDetails(id: string) {
     throw new Error("We could not load this mentor. Please try again.");
   if (!mentor || !profile) return null;
   const [rating] = await loadMentorRatings([id]);
-  return { mentor, profile, slots: slots || [], rating };
+  return {
+    mentor,
+    profile,
+    slots: slots || [],
+    rating,
+    requestTime: Date.now(),
+  };
 }

@@ -12,6 +12,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/action-form";
 import { TimeRange } from "@/components/time-range";
 import { bookFreeIntro } from "@/features/bookings/actions";
+import { reservePaidSession } from "@/features/payments/actions";
+import { paymentConfigured } from "@/features/payments/server";
+import { formatINR } from "@/features/payments/shared";
 
 export default async function MentorPage({
   params,
@@ -27,21 +30,39 @@ export default async function MentorPage({
   if (!idSchema.safeParse(id).success) notFound();
   const detail = await mentorDetails(id);
   if (!detail) notFound();
-  const { mentor, profile, slots, rating } = detail;
+  const { mentor, profile, slots, rating, requestTime } = detail;
   const user = await currentUser();
   const supabase = await createSupabaseServerClient();
   const { data: prior, error: eligibilityError } = user
     ? await supabase
         .from("bookings")
-        .select("id")
+        .select("id,status")
         .eq("learner_id", user.id)
         .eq("mentor_id", id)
+        .eq("kind", "intro")
         .in("status", ["confirmed", "completed"])
         .limit(1)
     : { data: [], error: null };
   if (eligibilityError)
     throw new Error("We could not check introductory call eligibility.");
   const usedTrial = Boolean(prior?.length);
+  const completedIntro = prior?.some((b) => b.status === "completed") || false;
+  const selectableSlots = completedIntro
+    ? slots.filter((s) => Date.parse(s.starts_at) > requestTime + 15 * 60_000)
+    : slots;
+  const { data: pending, error: pendingError } = user
+    ? await supabase
+        .from("bookings")
+        .select("id")
+        .eq("learner_id", user.id)
+        .eq("mentor_id", id)
+        .eq("status", "awaiting_payment")
+        .gt("hold_expires_at", new Date().toISOString())
+        .limit(1)
+    : { data: [], error: null };
+  if (pendingError)
+    throw new Error("We could not check your checkout reservation.");
+  const checkoutReady = paymentConfigured();
   return (
     <div className="shell page-space">
       <Link href="/mentors" className="text-link">
@@ -81,7 +102,10 @@ export default async function MentorPage({
               One free introductory call.
               <small>
                 Your first call with this mentor is free. Cancelling before the
-                start time restores your introduction.
+                start time restores your introduction.{" "}
+                {mentor.session_price_paise
+                  ? `Follow-up sessions cost ${formatINR(mentor.session_price_paise)} per published slot.`
+                  : "Paid follow-ups have not been enabled by this mentor yet."}
               </small>
             </p>
           </div>
@@ -98,25 +122,54 @@ export default async function MentorPage({
             </p>
           )}
           <p className="muted">Slots are shown in your timezone.</p>
+          {completedIntro && (
+            <p className="muted">
+              New paid bookings close 15 minutes before the session starts.
+            </p>
+          )}
           {user?.id === id ? (
             <p className="feedback">
               This is your mentor profile.{" "}
               <Link href="/dashboard/mentor">Manage availability</Link>.
             </p>
-          ) : usedTrial ? (
-            <div className="feedback success">
-              You already have a confirmed or completed introduction with this
-              mentor. <Link href="/dashboard">View your sessions</Link>.
+          ) : pending?.length ? (
+            <div className="feedback">
+              <p>You have a checkout in progress with this mentor.</p>
+              <Link className="button" href={`/checkout/${pending[0].id}`}>
+                Resume checkout
+              </Link>
             </div>
-          ) : slots.length ? (
+          ) : usedTrial && !completedIntro ? (
+            <div className="feedback success">
+              Your free introduction with this mentor is booked. Complete that
+              call to unlock paid follow-ups.{" "}
+              <Link href="/dashboard">View your sessions</Link>.
+            </div>
+          ) : completedIntro && !mentor.session_price_paise ? (
+            <p className="feedback">
+              Your free introduction is complete. This mentor has not enabled
+              paid follow-up sessions yet.
+            </p>
+          ) : selectableSlots.length ? (
             <div className="slot-list">
-              {slots.map((slot) => (
+              {selectableSlots.map((slot) => (
                 <div className="slot-card" key={slot.id}>
                   <TimeRange start={slot.starts_at} end={slot.ends_at} />
-                  {user ? (
+                  {user && completedIntro && !checkoutReady ? (
+                    <p className="muted">
+                      {formatINR(mentor.session_price_paise!)} · Test checkout
+                      is being configured.
+                    </p>
+                  ) : user ? (
                     <ActionForm
-                      action={bookFreeIntro}
-                      submitLabel="Book free introduction"
+                      action={
+                        completedIntro ? reservePaidSession : bookFreeIntro
+                      }
+                      submitLabel={
+                        completedIntro
+                          ? `Continue to payment · ${formatINR(mentor.session_price_paise!)}`
+                          : "Book free introduction"
+                      }
                     >
                       <input
                         name="sourcePostId"

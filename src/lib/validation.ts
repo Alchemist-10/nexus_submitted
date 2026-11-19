@@ -71,6 +71,15 @@ export function safeNext(value: unknown): string {
 }
 
 const databaseMessages: Record<string, string> = {
+  CHECKOUT_PENDING:
+    "You have a checkout in progress. Resume or cancel it from My sessions before choosing another slot.",
+  CHECKOUT_RATE_LIMIT:
+    "Too many checkout attempts. Please wait ten minutes and try again.",
+  INTRO_REQUIRED:
+    "Complete your free introductory call with this mentor before booking a paid follow-up.",
+  PAID_SESSIONS_DISABLED:
+    "This mentor has not enabled paid follow-up sessions yet.",
+  INVALID_PRICE: "Choose a session price from ₹1 to ₹25,000.",
   INVALID_RATING: "Choose 1–5 stars.",
   RATING_NOT_READY:
     "Your rating unlocks when the mentor ends this session in Nexus.",
@@ -93,7 +102,8 @@ const databaseMessages: Record<string, string> = {
     "Only confirmed sessions that have not started can be cancelled.",
   CANNOT_COMPLETE:
     "Only the mentor can end a confirmed session, after its scheduled start.",
-  SLOT_HAS_BOOKING: "Cancel the confirmed booking before closing this slot.",
+  SLOT_HAS_BOOKING:
+    "This slot has a booking or an active checkout reservation. Cancel it or wait for checkout to expire.",
   INVALID_SLOT: "Choose a future slot within 90 days, lasting 15–120 minutes.",
   MENTOR_REQUIRED: "Publish your mentor profile before adding availability.",
   OUTSIDE_JOIN_WINDOW:

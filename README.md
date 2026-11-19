@@ -17,12 +17,40 @@ A clean rebuild of the Nexus mentorship platform. The original project stays in 
 - Availability entered in the browser's local timezone and stored as `timestamptz`.
 - Transactional booking, stable retry keys, one free call per pair, and database-enforced participant overlap protection across learner/mentor roles.
 - Participant-only session dashboard and booking history.
+- Razorpay test checkout for follow-ups after a completed free introduction, mentor-set INR prices, ten-minute reservations, server-verified capture, and tracked full refunds for pre-start cancellation.
 - Cancellation before the start time releases both the slot and free introduction. Only the mentor can end a confirmed session after its scheduled start, including when the call finishes early.
 - Private meeting links, available only to confirmed participants within the join window.
 - One-time 1�5 star mentor ratings from the booked learner after the mentor ends a started session, with public averages and counts.
 - Executable migrations, local fixtures, SQL authorization tests, input validation tests, CI, and a production build.
 
-Payments, automated email reminders, Redis, and integrated video rooms are later milestones. This app does not charge users or distribute mentor payouts yet. It uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
+Payments run only in Razorpay test mode. Real gateway testing requires local test keys and a public HTTPS webhook endpoint; simulated provider tests are labelled separately. Live charges and mentor payouts are not enabled. Automated email reminders, Redis, and integrated video rooms are later milestones. The app uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
+
+## Test payments
+
+Each learner gets one free introduction with each mentor. Complete that call first; then choose a follow-up slot and continue to payment. Mentors set a price per published session in Mentor studio. Aarav and Meera's demo follow-ups are INR 199. An ongoing checkout has a fixed price and reserves both participants' schedules for ten minutes. Payment must be verified as captured before meeting access is possible. See the [approved design](docs/superpowers/specs/2026-11-19-paid-bookings-design.md) and [verification record](docs/payments-verification.md).
+
+Add these values to the existing ignored `.env.local`, keeping the current Supabase public configuration:
+
+```dotenv
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_test_key_secret
+RAZORPAY_WEBHOOK_SECRET=your_chosen_webhook_secret
+SUPABASE_SECRET_KEY=your_server_only_supabase_secret
+```
+
+Use Razorpay **Test mode** API keys. Live key IDs are refused. The Supabase secret key comes from the same nexus-rebuild project, under Settings → API keys → Secret keys. Never put these secrets in chat, a commit, browser code or a NEXT_PUBLIC variable. Configure Razorpay automatic capture for the test integration; authorization alone leaves the booking unconfirmed.
+
+Configure a publicly reachable HTTPS webhook endpoint ending in `/api/payments/razorpay/webhook`, with the same webhook secret. Subscribe to `payment.captured`, `payment.failed`, `order.paid`, `refund.processed` and `refund.failed`. Localhost cannot receive provider webhooks directly; use a staging deployment or an explicitly configured public development tunnel. No tunnel is opened automatically. Follow [Razorpay webhook testing](https://razorpay.com/docs/webhooks/validate-test).
+
+Run the durable payment worker alongside local development:
+
+```powershell
+npm run payments:work -- --watch
+```
+
+Without `--watch`, it processes one batch and exits. Schedule repeated worker runs on deployment, with the same private environment. Browser verification gives immediate confirmation; webhooks and the worker recover missed callbacks and process refunds after a browser closes. Jobs use leases, bounded backoff and a visible review state when recovery is exhausted. The worker is required for unattended retry processing; refresh alone is not an operational substitute.
+
+Cancel before the session starts to request a full refund. Cancellation immediately releases the slot; the payment summary remains Refund pending until provider verification reports success. Paid cancellation never restores the free introduction. Late capture after expiry also creates a tracked full refund. No subscriptions, commissions, bank-account collection, automatic mentor transfers or live-mode switch are included.
 
 ## Run the app
 

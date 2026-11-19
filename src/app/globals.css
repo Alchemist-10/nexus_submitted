@@ -9,6 +9,44 @@
   --soft: #f2e9e6;
   --radius: 18px;
 }
+.payment-mode {
+  display: inline-block;
+  color: var(--burgundy);
+  background: var(--soft);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.payment-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 22px 0;
+}
+.payment-checkout > .button {
+  width: 100%;
+  white-space: normal;
+}
+.checkout-shell .panel > small {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 24px;
+}
+.payment-status {
+  color: var(--burgundy);
+  font-weight: 700;
+  font-size: 13px;
+}
+.badge.awaiting_payment {
+  color: var(--burgundy);
+  background: var(--soft);
+}
+.badge.expired {
+  color: var(--muted);
+  background: var(--soft);
+}
 * {
   box-sizing: border-box;
 }

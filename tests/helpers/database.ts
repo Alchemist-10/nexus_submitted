@@ -102,8 +102,10 @@ export const people = {
 export async function resetFixtures(db: DB) {
   await db.exec("truncate auth.users cascade;");
   for (const [name, id] of Object.entries(people)) {
+    // Both drivers receive serialized JSON text; prevent postgres.js from
+    // encoding that string again when it infers a jsonb parameter.
     await db.query(
-      "insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3::jsonb)",
+      "insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3::text::jsonb)",
       [id, `${name}@nexus.test`, JSON.stringify({ full_name: name })],
     );
   }

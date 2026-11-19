@@ -597,6 +597,72 @@ test("provider full refunds revoke confirmed access even before refund-list prop
   );
 });
 
+test("crossing the deadline during capture expires atomically; exhausted recovery stays visible", async () => {
+  await intro();
+  const b = await reserve((await makeSlot(db)).id);
+  await attach(b.id);
+  await db.exec(`create function app_private.delay_test_capture() returns trigger language plpgsql as $$ begin perform pg_sleep(0.6); return new; end $$;
+    create trigger delay_test_capture before insert on app_private.captured_payments for each row execute function app_private.delay_test_capture();`);
+  try {
+    await db.query(
+      "update bookings set hold_expires_at=clock_timestamp()+interval '0.5 seconds' where id=$1",
+      [b.id],
+    );
+    await capture(b.id);
+    assert.deepEqual(await state(b.id), {
+      status: "expired",
+      state: "refund_pending",
+    });
+  } finally {
+    await db.exec(
+      "drop trigger delay_test_capture on app_private.captured_payments; drop function app_private.delay_test_capture();",
+    );
+  }
+  await db.query(
+    "update app_private.payment_jobs set available_at=now(),attempts=11 where booking_id=$1 and kind='refund'",
+    [b.id],
+  );
+  const job = (
+    await trusted((a) =>
+      a.query("select payment_claim_jobs($1,5) as job", [b.id]),
+    )
+  ).rows
+    .map((r) => r.job as { id: string; kind: string; lease_token: string })
+    .find((j) => j.kind === "refund")!;
+  await trusted((a) =>
+    a.query("select payment_finish_job($1,$2,false,'PROVIDER_UNAVAILABLE')", [
+      job.id,
+      job.lease_token,
+    ]),
+  );
+  assert.equal((await state(b.id)).state, "action_required");
+  const uncertain = await reserve((await makeSlot(db, people.mentor, 90)).id);
+  await attach(uncertain.id, "review");
+  await db.query(
+    "update bookings set hold_expires_at=now()-interval '1 second' where id=$1",
+    [uncertain.id],
+  );
+  await db.query(
+    "update app_private.payment_jobs set available_at=now(),attempts=11 where booking_id=$1",
+    [uncertain.id],
+  );
+  const review = (
+    await trusted((a) =>
+      a.query("select payment_claim_jobs($1,1) as job", [uncertain.id]),
+    )
+  ).rows[0].job as { id: string; lease_token: string };
+  await trusted((a) =>
+    a.query("select payment_finish_job($1,$2,false,'PROVIDER_UNAVAILABLE')", [
+      review.id,
+      review.lease_token,
+    ]),
+  );
+  assert.deepEqual(await state(uncertain.id), {
+    status: "expired",
+    state: "action_required",
+  });
+});
+
 test(
   "capture racing expiry never confirms an expired reservation",
   { skip: !process.env.DATABASE_TEST_URL },

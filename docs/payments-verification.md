@@ -25,9 +25,9 @@ Refund intent is durable in the cancellation/late-capture transaction. Refund re
 - The one uncharged UI reservation was cancelled through Nexus. Hosted verification confirmed status cancelled, no active participant reservations, and no provider order. Its cancelled audit record is intentionally retained in the demo student's history. Existing real/demo accounts, content, bookings and rating are preserved.
 - In Mentor studio, an invalid INR 0.10 fee produced a validation error and left the saved fee unchanged. Saving the existing INR 199 fee succeeded. The mentor editor also had zero axe violations and incomplete checks. Anonymous checkout preparation returned 401, a foreign Origin returned 403, and the mentor attempting to prepare the learner's checkout received 404.
 
-Local verification passed 74 tests in total: 69 passed and five independent-connection cases were deliberately skipped under PGlite. TypeScript, lint, formatting and the production build passed. The CI workflow also runs all cases on disposable native PostgreSQL, including those races.
+Local verification includes a capture delayed across its deadline, checking an atomic expired/refund-pending outcome and a visible review state for exhausted recovery. The suite contains 75 cases; five independent-connection cases are deliberately skipped under PGlite. TypeScript, lint, formatting and the production build passed. The CI workflow also runs all cases on disposable native PostgreSQL, including those races.
 
-The migrations `20261119111342_paid_bookings.sql` and `20261119113407_payment_refund_reconciliation.sql` are applied to nexus-rebuild. Public database types were regenerated; nullable mentor-price arguments are refined locally because function introspection omits nullability.
+The migrations `20261119111342_paid_bookings.sql`, `20261119113407_payment_refund_reconciliation.sql` and `20261119120148_payment_deadline_recovery.sql` are applied to nexus-rebuild. Public database types were regenerated; nullable mentor-price arguments are refined locally because function introspection omits nullability. The follow-ups retain the same public function signatures.
 
 ## External verification still required
 

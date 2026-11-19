@@ -358,12 +358,11 @@ export default async function PostPage({
                   </p>
                   {mentor.next_available ? (
                     <p className="availability-note">
-                      Next introduction:{" "}
-                      <TimeRange start={mentor.next_available} />
+                      Next session: <TimeRange start={mentor.next_available} />
                     </p>
                   ) : (
                     <p className="muted small-copy">
-                      No open introductory slots right now.
+                      No open session slots right now.
                     </p>
                   )}
                   <Link
@@ -371,7 +370,7 @@ export default async function PostPage({
                     href={`/mentors/${mentor.mentor_id}?post=${id}`}
                   >
                     {mentor.next_available
-                      ? "Book a free introduction"
+                      ? "Choose a session"
                       : "View mentor profile"}
                     <ArrowUpRight size={15} />
                   </Link>

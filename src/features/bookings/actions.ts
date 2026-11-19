@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   bookingSchema,
+  ratingSchema,
   idSchema,
   meetingSchema,
   mentorSchema,
@@ -13,6 +14,23 @@ import {
   databaseError,
   type ActionState,
 } from "@/lib/validation";
+
+export async function rateMentor(
+  _state: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  await requireUser();
+  const parsed = ratingSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: "Choose a star rating from 1 to 5." };
+  const db = await createSupabaseServerClient();
+  const { error } = await db.rpc("rate_mentor", {
+    p_booking_id: parsed.data.bookingId,
+    p_score: parsed.data.score,
+  });
+  if (error) return { error: databaseError(error.message) };
+  revalidatePath("/", "layout");
+  return { success: "Thank you. Your mentor rating has been saved." };
+}
 
 function refreshed() {
   revalidatePath("/", "layout");

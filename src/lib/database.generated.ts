@@ -479,6 +479,32 @@ export type Database = {
           },
         ];
       };
+      mentor_ratings: {
+        Row: {
+          booking_id: string;
+          created_at: string;
+          score: number;
+        };
+        Insert: {
+          booking_id: string;
+          created_at?: string;
+          score: number;
+        };
+        Update: {
+          booking_id?: string;
+          created_at?: string;
+          score?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mentor_ratings_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: true;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -700,6 +726,18 @@ export type Database = {
         }[];
       };
       get_booking_join_url: { Args: { p_booking_id: string }; Returns: string };
+      get_mentor_ratings: {
+        Args: { p_mentor_ids: string[] };
+        Returns: {
+          average_rating: number;
+          mentor_id: string;
+          rating_count: number;
+        }[];
+      };
+      rate_mentor: {
+        Args: { p_booking_id: string; p_score: number };
+        Returns: undefined;
+      };
       recommend_post_mentors: {
         Args: { p_post_id: string };
         Returns: {

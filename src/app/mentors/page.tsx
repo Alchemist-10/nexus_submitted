@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MentorRating } from "@/components/mentor-rating";
 import { ArrowUpRight } from "lucide-react";
 import { listMentors } from "@/features/mentorship/queries";
 export default async function MentorDirectory() {
@@ -34,6 +35,10 @@ export default async function MentorDirectory() {
               </div>
               <h3>{m.profile?.full_name}</h3>
               <p>{m.headline}</p>
+              <MentorRating
+                average={m.rating?.average_rating}
+                count={m.rating?.rating_count}
+              />
               <div className="tags">
                 {m.expertise.map((t) => (
                   <span key={t}>{t}</span>

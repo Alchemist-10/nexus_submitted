@@ -1,4 +1,5 @@
 import "server-only";
+import { loadMentorRatings } from "@/features/mentorship/ratings";
 import type { PostSummary, AnswerSummary } from "./database";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isConfigured } from "@/lib/env";
@@ -84,6 +85,9 @@ export async function loadPost(id: string, userId?: string) {
     throw new Error(
       "Answers or mentors could not be loaded. Please try again.",
     );
+  const ratings = await loadMentorRatings(
+    (mentors || []).map((m) => m.mentor_id),
+  );
   const ordered = [...((answers || []) as AnswerSummary[])].sort(
     (a, b) =>
       Number(b.id === post.accepted_answer_id) -
@@ -92,7 +96,10 @@ export async function loadPost(id: string, userId?: string) {
   return {
     post,
     answers: ordered,
-    mentors: mentors || [],
+    mentors: (mentors || []).map((m) => ({
+      ...m,
+      rating: ratings.find((r) => r.mentor_id === m.mentor_id),
+    })),
     votes: votes || [],
     imageUrls: post.image_paths.map(
       (path) =>

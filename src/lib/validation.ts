@@ -33,6 +33,14 @@ export const bookingSchema = z.object({
   slotId: idSchema,
   requestKey: idSchema,
 });
+export const ratingSchema = z.object({
+  bookingId: idSchema,
+  score: z.coerce
+    .number()
+    .int()
+    .min(1, "Choose 1–5 stars.")
+    .max(5, "Choose 1–5 stars."),
+});
 export const meetingSchema = z.object({
   bookingId: idSchema,
   joinUrl: z
@@ -63,6 +71,11 @@ export function safeNext(value: unknown): string {
 }
 
 const databaseMessages: Record<string, string> = {
+  INVALID_RATING: "Choose 1–5 stars.",
+  RATING_NOT_READY:
+    "You can rate this mentor once the session has ended and is marked complete.",
+  RATING_ALREADY_SUBMITTED:
+    "You have already rated this session. Submitted ratings cannot be changed.",
   POST_UNAVAILABLE:
     "This learning request is no longer available. Book from the mentor directory instead.",
   AUTH_REQUIRED: "Please sign in to continue.",

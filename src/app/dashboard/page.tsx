@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RateMentorForm } from "@/components/rate-mentor-form";
 import { ArrowUpRight, CalendarDays, Video } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { loadMyBookings } from "@/features/bookings/queries";
@@ -16,7 +17,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ notice?: string }>;
 }) {
   const user = await requireUser();
-  const { bookings, profiles, requestTime } = await loadMyBookings();
+  const { bookings, profiles, ratings, requestTime } = await loadMyBookings();
   const { notice } = await searchParams;
   return (
     <div className="shell page-space">
@@ -44,6 +45,7 @@ export default async function DashboardPage({
       {bookings.length ? (
         <div className="bookings-grid">
           {bookings.map((booking) => {
+            const rating = ratings.find((r) => r.booking_id === booking.id);
             const isMentor = booking.mentor_id === user.id;
             const otherId = isMentor ? booking.learner_id : booking.mentor_id;
             const otherName =
@@ -75,6 +77,15 @@ export default async function DashboardPage({
                 <p className="muted">
                   <Video size={15} /> Free introductory video call
                 </p>
+                {booking.status === "completed" &&
+                  (rating ? (
+                    <p className="saved-session-rating">
+                      {isMentor ? "Student rating" : "You rated this session"}:{" "}
+                      <strong>{rating.score} / 5 stars</strong>
+                    </p>
+                  ) : !isMentor && ended ? (
+                    <RateMentorForm bookingId={booking.id} />
+                  ) : null)}
                 {booking.status === "confirmed" && (
                   <>
                     <Link

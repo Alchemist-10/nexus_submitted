@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MentorRating } from "@/components/mentor-rating";
 import { randomUUID } from "node:crypto";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Video, ShieldCheck } from "lucide-react";
@@ -25,7 +26,7 @@ export default async function MentorPage({
   if (!idSchema.safeParse(id).success) notFound();
   const detail = await mentorDetails(id);
   if (!detail) notFound();
-  const { mentor, profile, slots } = detail;
+  const { mentor, profile, slots, rating } = detail;
   const user = await currentUser();
   const supabase = await createSupabaseServerClient();
   const { data: prior, error: eligibilityError } = user
@@ -51,6 +52,10 @@ export default async function MentorPage({
           <span className="eyebrow">MEET YOUR MENTOR</span>
           <h1>{profile.full_name}</h1>
           <h2>{mentor.headline}</h2>
+          <MentorRating
+            average={rating?.average_rating}
+            count={rating?.rating_count}
+          />
           <div className="tags">
             {mentor.expertise.map((tag) => (
               <span key={tag}>{tag}</span>

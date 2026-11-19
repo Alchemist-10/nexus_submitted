@@ -19,5 +19,20 @@ export async function loadMyBookings() {
     : { data: [], error: null };
   if (profileError)
     throw new Error("Session participants could not be loaded.");
-  return { bookings, profiles, requestTime: Date.now() };
+  const { data: ratings, error: ratingError } = bookings.length
+    ? await supabase
+        .from("mentor_ratings")
+        .select("*")
+        .in(
+          "booking_id",
+          bookings.map((b) => b.id),
+        )
+    : { data: [], error: null };
+  if (ratingError) throw new Error("Your session ratings could not be loaded.");
+  return {
+    bookings,
+    profiles,
+    ratings: ratings || [],
+    requestTime: Date.now(),
+  };
 }

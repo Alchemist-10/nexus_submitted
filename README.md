@@ -16,6 +16,7 @@ A clean rebuild of the Nexus mentorship platform. The original project stays in 
 - Participant-only session dashboard and booking history.
 - Cancellation before the start time releases both the slot and free introduction. Only the mentor can mark a call complete after its end time.
 - Private meeting links, available only to confirmed participants within the join window.
+- One-time 1�5 star mentor ratings from the booked learner after a session is completed, with public averages and counts.
 - Executable migrations, local fixtures, SQL authorization tests, input validation tests, CI, and a production build.
 
 Payments, automated email reminders, Redis, and integrated video rooms are later milestones. This app does not charge users or distribute mentor payouts yet. It uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
@@ -90,7 +91,8 @@ Set the actual HTTPS deployment URL in both Supabase and `NEXT_PUBLIC_APP_URL` b
 5. Check that both accounts see the session in **My sessions**.
 6. The mentor adds an HTTPS video meeting link to that booking. It is not included in public mentor/slot data or general booking responses.
 7. **Meeting access** becomes available 15 minutes before the call and closes 15 minutes after it ends. Both role and booking state are checked on the server/database.
-8. Cancelling before the start time restores the introduction. A completed call consumes the free introduction with that mentor. Another mentor has a separate allowance.
+8. After the scheduled end, the mentor marks the introduction complete. The learner can then submit a one-time 1�5 star rating in **My sessions**. Only the average and count are public; individual ratings are visible to the booking participants. Leaving Google Meet does not automatically complete the booking or verify attendance.
+9. Cancelling before the start time restores the introduction. A completed call consumes the free introduction with that mentor. Another mentor has a separate allowance.
 
 A member can both mentor and learn. Public profile data includes name and username, not account email. This milestone has no elevated admin UI. No-show and paid cancellation policies will be designed with the payment milestone; a confirmed introduction continues to reserve the allowance until a supported transition occurs.
 
@@ -98,11 +100,11 @@ A member can both mentor and learn. Public profile data includes name and userna
 
 The homepage is the student learning-request feed. Publish at `/posts/new`, then find relevant mentors on each `/posts/[id]` page. The main action leads to a free introductory call; public explanations provide context and evidence of how a mentor teaches. Public answers do not automatically grant reputation just for posting.
 
-Mentor matching requires overlap between request tags and normalized declared expertise or accepted-answer topic evidence. Matching topics dominate bounded contributions and availability signals. It includes new mentors with relevant expertise, excludes the question author and the viewing mentor themselves, and shows an honest empty state when no match exists. This is a deterministic baseline, not an AI model or a claim of verified credentials. Session star ratings are not implemented.
+Mentor matching requires overlap between request tags and normalized declared expertise or accepted-answer topic evidence. Matching topics dominate bounded contributions and availability signals. It includes new mentors with relevant expertise, excludes the question author and the viewing mentor themselves, and shows an honest empty state when no match exists. This is a deterministic baseline, not an AI model or a claim of verified credentials. Session star ratings are collected separately after completed bookings.
 
 `post-images` is a public Storage bucket explicitly approved by the owner. Only authenticated owners can upload/delete within their UUID path. The form checks raster signatures and limits uploads to three PNG/JPEG/WebP files of at most 3 MiB each. Text and code render as escaped plain text. Images and public discussions should never contain credentials or private student information. Reports are visible only to their reporter and privileged database operators; review them in Supabase until the moderation dashboard is built.
 
-The feed uses pages of 15; post detail currently loads up to 100 answers. Search currently matches titles. There is no automatic image understanding, spam detection, or semantic ranking. See [community verification](docs/community-verification.md) for evidence and limits.
+The feed uses pages of 15; post detail currently loads up to 100 answers. Search currently matches titles. There is no automatic image understanding, spam detection, or semantic ranking. See [community verification](docs/community-verification.md) and [rating verification](docs/ratings-verification.md) for evidence and limits.
 
 ## Verify
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MentorRating } from "@/components/mentor-rating";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, Check, Video } from "lucide-react";
@@ -312,6 +313,10 @@ export default async function PostPage({
                       <p>{mentor.headline}</p>
                     </div>
                   </div>
+                  <MentorRating
+                    average={mentor.rating?.average_rating}
+                    count={mentor.rating?.rating_count}
+                  />
                   <p className="match-reason">
                     Matches{" "}
                     {mentor.matched_tags

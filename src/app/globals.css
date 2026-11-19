@@ -1703,3 +1703,65 @@ select:focus-visible {
     font-size: 11px;
   }
 }
+
+.mentor-rating-summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  color: var(--burgundy);
+  font-size: 12px;
+  margin: 8px 0;
+}
+.rating-count {
+  color: var(--muted);
+  font-size: 11px;
+}
+.session-rating {
+  border-top: 1px solid var(--line);
+  padding-top: 19px;
+  margin-top: 18px;
+}
+.rating-group legend {
+  font-size: 14px;
+  font-weight: 600;
+}
+.rating-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.action-form .rating-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px;
+  margin: 5px 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--burgundy);
+  cursor: pointer;
+}
+.rating-choice.selected {
+  background: #f0dce2;
+  border-color: #a6506b;
+}
+.rating-choice:has(input:focus-visible) {
+  outline: 3px solid #a6506b;
+  outline-offset: 3px;
+}
+.rating-choice input[type="radio"] {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--burgundy);
+  display: inline-block;
+}
+.saved-session-rating {
+  padding: 12px 14px;
+  border-radius: 7px;
+  color: var(--burgundy);
+  background: #f5e7e9;
+  font-size: 12px;
+}

@@ -1,4 +1,5 @@
 import "server-only";
+import { loadMentorRatings } from "./ratings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isConfigured } from "@/lib/env";
 
@@ -24,7 +25,9 @@ export async function listMentors() {
       mentors.map((mentor) => mentor.user_id),
     );
   if (profileError) throw new Error("Mentor profiles could not be loaded.");
+  const ratings = await loadMentorRatings(mentors.map((m) => m.user_id));
   return mentors.map((mentor) => ({
+    rating: ratings.find((r) => r.mentor_id === mentor.user_id),
     ...mentor,
     profile: profiles.find((p) => p.id === mentor.user_id),
   }));
@@ -48,5 +51,7 @@ export async function mentorDetails(id: string) {
   ]);
   if (error || profileError || slotError)
     throw new Error("We could not load this mentor. Please try again.");
-  return mentor && profile ? { mentor, profile, slots: slots || [] } : null;
+  if (!mentor || !profile) return null;
+  const [rating] = await loadMentorRatings([id]);
+  return { mentor, profile, slots: slots || [], rating };
 }

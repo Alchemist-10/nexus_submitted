@@ -284,11 +284,18 @@ test("participant overlap is enforced across learner and mentor roles", async ()
 
 test("adjacent slots do not conflict", async () => {
   const first = await makeSlot(db);
-  // Reuse the exact endpoint so the intervals are truly adjacent.
+  // Read text directly: postgres.js Date parsing drops PostgreSQL microseconds,
+  // which would turn an adjacent boundary into a tiny, genuine overlap.
+  const exactEnd = (
+    await db.query<{ end_at: string }>(
+      "select ends_at::text as end_at from public.availability_slots where id=$1",
+      [first.id],
+    )
+  ).rows[0].end_at;
   const { rows } = await asUser(db, people.secondMentor, (actor) =>
     actor.query<{ id: string }>(
       "select * from public.create_availability($1::timestamptz,$1::timestamptz+interval '30 minutes')",
-      [first.ends_at],
+      [exactEnd],
     ),
   );
   await book(first.id);

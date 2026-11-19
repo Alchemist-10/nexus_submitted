@@ -47,7 +47,7 @@ export async function createDatabase(): Promise<DB> {
     db = wrap(sql);
     // Guarded above: never run this reset against a hosted or live database.
     await db.exec(
-      "drop schema if exists app_private cascade; drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists extensions cascade; create schema public;",
+      "drop schema if exists storage cascade; drop schema if exists app_private cascade; drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists extensions cascade; create schema public;",
     );
   } else {
     const pg = new PGlite({ extensions: { btree_gist } });
@@ -67,6 +67,12 @@ export async function createDatabase(): Promise<DB> {
   await db.exec(`
     do $$ begin create role anon; exception when duplicate_object then null; end $$;
     do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
+    create schema storage;
+    create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+    create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text unique);
+    alter table storage.objects enable row level security;
+    grant usage on schema storage to anon,authenticated;
+    grant select,insert,delete on storage.objects to authenticated;
     create schema auth;
     create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb not null default '{}');
     create function auth.uid() returns uuid language sql stable as

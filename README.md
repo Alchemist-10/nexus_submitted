@@ -1,9 +1,14 @@
 # Nexus
 
-A clean rebuild of the Nexus mentorship platform. The original project stays in `../Nexus_submitted/` as a reference. This first milestone includes the database, email authentication, mentor profiles, availability, and one free introductory booking per learner-mentor pair.
+A clean rebuild of the Nexus mentorship platform. The original project stays in `../Nexus_submitted/` as a reference. The app connects engineering students to mentors through learning requests, useful community explanations, and one free introductory booking per learner-mentor pair.
 
-## What works in this milestone
+## What works
 
+- Community feed with latest/top/unanswered views, category/topic filters, title search, and pagination.
+- Learning requests with context, the specific point of confusion, topic tags, and up to three public raster images.
+- Answers, unique reversible upvotes, author-accepted answers, owner deletion, and private reports for manual review.
+- Explainable mentor recommendations using topic overlap, actual answer evidence, and open introductory slots.
+- Booking from a post preserves its context for both participants.
 - Email/password signup, email confirmation, sign-in, and sign-out using cookie-based Supabase SSR authentication.
 - Public mentor discovery and self-service mentor profiles.
 - Availability entered in the browser's local timezone and stored as `timestamptz`.
@@ -13,7 +18,7 @@ A clean rebuild of the Nexus mentorship platform. The original project stays in 
 - Private meeting links, available only to confirmed participants within the join window.
 - Executable migrations, local fixtures, SQL authorization tests, input validation tests, CI, and a production build.
 
-Payments, community feeds, automated email reminders, Redis, and integrated video rooms are later milestones. This app does not charge users or distribute mentor payouts yet. It uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
+Payments, automated email reminders, Redis, and integrated video rooms are later milestones. This app does not charge users or distribute mentor payouts yet. It uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
 
 ## Run the app
 
@@ -64,10 +69,10 @@ Slots are seeded two days ahead. Fresh signups receive confirmation mail in the 
 
 ## Option B: a new hosted Supabase project
 
-This workspace is connected to **nexus-rebuild** (`amgwmeqophjaprqemqym`) in **2026-after_nov**. The foundation migration is applied, and the ignored `.env.local` contains its public client configuration. Do not reapply the migration or overwrite that file when restarting this checkout.
+This workspace is connected to **nexus-rebuild** (`amgwmeqophjaprqemqym`) in **2026-after_nov**. The foundation and community migrations are applied, and the ignored `.env.local` contains its public client configuration. Do not reapply the migration or overwrite that file when restarting this checkout.
 
 1. Create a new project using Supabase.
-2. Apply `supabase/migrations/20261119045345_foundation.sql` using the SQL editor, or link the project with the CLI and run `supabase db push`. Apply the migration once. Keep local demo seeds out of production.
+2. Apply the files in `supabase/migrations/` in timestamp order, or link the project with the CLI and run `supabase db push`. Each migration is applied once. The current hosted project already has the foundation and community migrations. Keep local demo seeds out of production.
 3. Copy the project's API URL and publishable/anon key into `.env.local`.
 4. In Auth URL Configuration, set Site URL to `http://localhost:3000` for development. Allow `http://localhost:3000/auth/callback`.
 5. Enable email signup and email confirmation. Set a password minimum of at least 12 characters. Confirm your email before signing in.
@@ -78,7 +83,7 @@ Set the actual HTTPS deployment URL in both Supabase and `NEXT_PUBLIC_APP_URL` b
 
 ## Try the complete free booking flow
 
-1. Sign in as a mentor and open **Mentor studio**.
+1. Sign in as a mentor and open **Mentor studio**. Use matching expertise such as `DSA`, `Python`, or `React` to appear on relevant learning requests.
 2. Publish the mentor profile and add a future slot.
 3. Sign in as a different account in another browser profile or private window.
 4. Open the mentor profile and book the free introduction.
@@ -88,6 +93,16 @@ Set the actual HTTPS deployment URL in both Supabase and `NEXT_PUBLIC_APP_URL` b
 8. Cancelling before the start time restores the introduction. A completed call consumes the free introduction with that mentor. Another mentor has a separate allowance.
 
 A member can both mentor and learn. Public profile data includes name and username, not account email. This milestone has no elevated admin UI. No-show and paid cancellation policies will be designed with the payment milestone; a confirmed introduction continues to reserve the allowance until a supported transition occurs.
+
+## Community and mentor matching
+
+The homepage is the student learning-request feed. Publish at `/posts/new`, then find relevant mentors on each `/posts/[id]` page. The main action leads to a free introductory call; public explanations provide context and evidence of how a mentor teaches. Public answers do not automatically grant reputation just for posting.
+
+Mentor matching requires overlap between request tags and normalized declared expertise or accepted-answer topic evidence. Matching topics dominate bounded contributions and availability signals. It includes new mentors with relevant expertise, excludes the question author and the viewing mentor themselves, and shows an honest empty state when no match exists. This is a deterministic baseline, not an AI model or a claim of verified credentials. Session star ratings are not implemented.
+
+`post-images` is a public Storage bucket explicitly approved by the owner. Only authenticated owners can upload/delete within their UUID path. The form checks raster signatures and limits uploads to three PNG/JPEG/WebP files of at most 3 MiB each. Text and code render as escaped plain text. Images and public discussions should never contain credentials or private student information. Reports are visible only to their reporter and privileged database operators; review them in Supabase until the moderation dashboard is built.
+
+The feed uses pages of 15; post detail currently loads up to 100 answers. Search currently matches titles. There is no automatic image understanding, spam detection, or semantic ranking. See [community verification](docs/community-verification.md) for evidence and limits.
 
 ## Verify
 
@@ -141,4 +156,4 @@ The database is authoritative: narrow RPCs validate the authenticated identity a
 
 1. Optional paid offerings after the free introduction; verified server-side checkout, temporary slot holds, payment history, refunds, and reconciliation.
 2. Durable notification outbox, Redis/BullMQ workers, reminders, and authorized realtime notifications.
-3. Community features migrated one module at a time; search benchmarks, shared rate limits, monitoring, and campus pilot evidence.
+3. Community notifications, shared rate limits, moderation tools, semantic mentor matching evaluated against the topic baseline, monitoring, and campus pilot evidence.

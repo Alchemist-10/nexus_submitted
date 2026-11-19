@@ -15,7 +15,8 @@ export async function Navigation() {
           nexus<span className="brand-dot">.</span>
         </Link>
         <nav aria-label="Main navigation">
-          <Link href="/#mentors">Find a mentor</Link>
+          <Link href="/">Community</Link>
+          <Link href="/mentors">Find a mentor</Link>
           {user ? (
             <>
               <Link href="/dashboard">My sessions</Link>

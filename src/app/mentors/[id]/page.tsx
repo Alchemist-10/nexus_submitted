@@ -13,11 +13,15 @@ import { bookFreeIntro } from "@/features/bookings/actions";
 
 export default async function MentorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ post?: string }>;
 }) {
   if (!isConfigured()) redirect("/setup");
   const { id } = await params;
+  const { post: source } = await searchParams;
+  const sourcePost = idSchema.safeParse(source).success ? source : undefined;
   if (!idSchema.safeParse(id).success) notFound();
   const detail = await mentorDetails(id);
   if (!detail) notFound();
@@ -38,7 +42,7 @@ export default async function MentorPage({
   const usedTrial = Boolean(prior?.length);
   return (
     <div className="shell page-space">
-      <Link href="/#mentors" className="text-link">
+      <Link href="/mentors" className="text-link">
         <ArrowLeft size={16} /> All mentors
       </Link>
       <div className="detail-grid">
@@ -72,6 +76,12 @@ export default async function MentorPage({
             <Video size={15} /> LET&apos;S TALK
           </span>
           <h2>Find a time to connect.</h2>
+          {sourcePost && (
+            <p className="feedback">
+              This call will include the context from your{" "}
+              <Link href={`/posts/${sourcePost}`}>learning request</Link>.
+            </p>
+          )}
           <p className="muted">Slots are shown in your timezone.</p>
           {user?.id === id ? (
             <p className="feedback">
@@ -93,6 +103,11 @@ export default async function MentorPage({
                       action={bookFreeIntro}
                       submitLabel="Book free introduction"
                     >
+                      <input
+                        name="sourcePostId"
+                        type="hidden"
+                        value={sourcePost || ""}
+                      />
                       <input name="slotId" type="hidden" value={slot.id} />
                       <input
                         name="requestKey"
@@ -103,7 +118,7 @@ export default async function MentorPage({
                   ) : (
                     <Link
                       className="button secondary"
-                      href={`/login?next=${encodeURIComponent(`/mentors/${id}`)}`}
+                      href={`/login?next=${encodeURIComponent(`/mentors/${id}${sourcePost ? `?post=${sourcePost}` : ""}`)}`}
                     >
                       Sign in to book
                     </Link>

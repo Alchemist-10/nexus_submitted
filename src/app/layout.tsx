@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: "%s · Nexus",
   },
   description:
-    "Find a mentor, share what you know, and start with a free introductory conversation.",
+    "Share where you are stuck, find a mentor for your engineering questions, and work through the approach in a free introductory call.",
 };
 export default function RootLayout({
   children,

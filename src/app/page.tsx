@@ -1,178 +1,273 @@
 import Link from "next/link";
 import {
-  ArrowRight,
   ArrowUpRight,
-  CalendarDays,
-  Check,
-  Compass,
-  Sparkles,
+  MessageSquare,
+  ArrowUp,
   Video,
+  Plus,
+  Search,
 } from "lucide-react";
-import { listMentors } from "@/features/mentorship/queries";
-import { isConfigured } from "@/lib/env";
-
-export default async function HomePage() {
-  const mentors = await listMentors();
-  const configured = isConfigured();
+import { loadFeed } from "@/features/community/queries";
+import { categories, topics, type Topic } from "@/features/community/shared";
+export default async function CommunityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    sort?: string;
+    category?: string;
+    topic?: string;
+    q?: string;
+    page?: string;
+  }>;
+}) {
+  const filters = await searchParams;
+  const { posts, hasMore, unavailable } = await loadFeed(filters);
+  const page = Math.max(
+    1,
+    Math.min(100, Math.trunc(Number(filters.page)) || 1),
+  );
+  function url(change: Record<string, string>) {
+    const p = new URLSearchParams(
+      Object.entries({ ...filters, ...change }).filter(([, v]) =>
+        Boolean(v),
+      ) as [string, string][],
+    );
+    return `/?${p}`;
+  }
   return (
-    <div className="shell">
-      <section className="hero">
-        <div className="hero-copy">
+    <div className="shell community-shell">
+      <section className="community-hero">
+        <div>
           <span className="eyebrow">
-            <span className="status-dot" /> A little guidance goes a long way
+            FOR ENGINEERING STUDENTS. FROM PEOPLE WHO GET IT.
           </span>
           <h1>
-            Your next step.
+            Stuck on the approach?
             <br />
-            Someone&apos;s
-            <br />
-            <em>been there.</em>
+            <em>Find your person.</em>
           </h1>
-          <p className="hero-description">
-            Find your people, ask the questions that matter, and move forward
-            with a mentor in your corner.
+          <p>
+            Some things click when someone walks you through them. Share the
+            problem. Find a mentor. Work it out together.
           </p>
           <div className="button-row">
-            <Link className="button" href="#mentors">
-              Find your mentor <ArrowUpRight size={18} />
+            <Link className="button" href="/posts/new">
+              <Plus size={17} />
+              Post where you’re stuck
             </Link>
-            <Link className="text-link" href="/dashboard/mentor">
-              Share what you know <ArrowRight size={16} />
+            <Link className="text-link" href="/mentors">
+              Explore mentors <ArrowUpRight size={16} />
             </Link>
-          </div>
-          <div className="hero-note">
-            <Check size={15} /> Your first introduction with each mentor is
-            free.
           </div>
         </div>
-        <div
-          className="hero-visual"
-          role="group"
-          aria-label="Start with a conversation, leave with a direction"
-        >
-          <span className="visual-orbit orbit-one" />
-          <span className="visual-orbit orbit-two" />
-          <div className="visual-label">
-            <Sparkles size={15} /> A fresh perspective
-          </div>
-          <div className="conversation-card">
-            <span className="card-kicker">YOUR NEXT CHAPTER</span>
-            <div className="visual-icon">
-              <Compass size={44} strokeWidth={1.3} />
-            </div>
-            <h2>
-              Big questions.
-              <br />
-              Real conversations.
-            </h2>
-            <p>
-              A new skill. A career decision.
-              <br />A place to begin.
-            </p>
-            <div className="conversation-bottom">
-              <span>
-                <Video size={17} /> Free introduction
-              </span>
-              <span className="round-arrow">
-                <ArrowUpRight size={18} />
-              </span>
-            </div>
-          </div>
-          <div className="floating-note">
-            <span className="note-check">
-              <Check size={17} />
-            </span>
-            <div>
-              A time that works for you
-              <small>One conversation at a time.</small>
-            </div>
-          </div>
+        <div className="hero-callout">
+          <Video size={28} strokeWidth={1.3} />
+          <h2>
+            More than
+            <br />
+            another answer.
+          </h2>
+          <p>
+            A person who listens.
+            <br />
+            An approach you understand.
+          </p>
+          <span>One free introductory call per mentor.</span>
         </div>
       </section>
-      <section className="how-strip" aria-label="How Nexus works">
-        <div>
-          <span>01</span>
-          <p>
-            Find your person<small>Explore people and their expertise.</small>
-          </p>
-        </div>
-        <div>
-          <span>02</span>
-          <p>
-            Pick a time<small>A slot that fits your schedule.</small>
-          </p>
-        </div>
-        <div>
-          <span>03</span>
-          <p>
-            Start a conversation<small>Get to know each other, for free.</small>
-          </p>
-        </div>
-      </section>
-      <section className="mentor-section" id="mentors">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">GOOD PEOPLE, USEFUL PERSPECTIVES</span>
-            <h2>Meet your next mentor.</h2>
-          </div>
-          <Link className="text-link" href="/dashboard/mentor">
-            Become a mentor <ArrowUpRight size={16} />
-          </Link>
-        </div>
-        {mentors.length > 0 ? (
-          <div className="mentor-grid">
-            {mentors.map((mentor) => (
+      <div className="feed-layout">
+        <aside className="feed-sidebar">
+          <span className="eyebrow">EXPLORE</span>
+          <nav aria-label="Community categories">
+            <Link
+              className={!filters.category ? "active" : ""}
+              href={url({ category: "", page: "1" })}
+            >
+              All learning requests
+            </Link>
+            {Object.entries(categories).map(([id, label]) => (
               <Link
-                className="mentor-card"
-                href={`/mentors/${mentor.user_id}`}
-                key={mentor.user_id}
+                className={filters.category === id ? "active" : ""}
+                key={id}
+                href={url({ category: id, page: "1" })}
               >
-                <div className="mentor-top">
-                  <span className="avatar">
-                    {(mentor.profile?.full_name || "M").slice(0, 1)}
-                  </span>
-                  <ArrowUpRight size={20} />
-                </div>
-                <h3>{mentor.profile?.full_name || "Nexus mentor"}</h3>
-                <p>{mentor.headline}</p>
-                <div className="tags">
-                  {mentor.expertise.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-                <div className="mentor-card-footer">
-                  <span className="status-dot" /> Free first introduction
-                </div>
+                {label}
               </Link>
             ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <span className="empty-icon">
-              <CalendarDays size={26} />
-            </span>
+          </nav>
+          <div className="sidebar-note">
+            <span className="eyebrow">YOU’VE BEEN THERE.</span>
             <h3>
-              {configured
-                ? "Make the first connection."
-                : "A fresh start for Nexus."}
+              Help someone
+              <br />
+              get unstuck.
             </h3>
             <p>
-              {configured
-                ? "The mentor directory is ready. Publish a profile and open your first introductory slot."
-                : "The clean app is ready for a new database. Connect Supabase to enable accounts, mentor profiles, and bookings."}
+              Share your approach. Build trust through useful contributions.
             </p>
-            <Link
-              href={configured ? "/dashboard/mentor" : "/setup"}
-              className="button secondary"
-            >
-              {configured
-                ? "Publish your mentor profile"
-                : "Set up this workspace"}
-              <ArrowRight size={16} />
+            <Link className="text-link" href="/dashboard/mentor">
+              Become a mentor <ArrowUpRight size={15} />
             </Link>
           </div>
-        )}
-      </section>
+        </aside>
+        <section className="feed-main" aria-label="Learning requests">
+          <div className="feed-heading">
+            <h2>Where we’re stuck</h2>
+            <span>Questions worth a conversation.</span>
+          </div>
+          <form method="get" className="feed-search">
+            <input
+              type="hidden"
+              name="category"
+              value={filters.category || ""}
+            />
+            <input type="hidden" name="sort" value={filters.sort || "latest"} />
+            <label className="search-field">
+              <Search size={17} />
+              <input
+                name="q"
+                aria-label="Search learning requests"
+                placeholder="Search a problem or question"
+                defaultValue={filters.q}
+              />
+            </label>
+            <select
+              name="topic"
+              aria-label="Filter by topic"
+              defaultValue={filters.topic || ""}
+            >
+              <option value="">All topics</option>
+              {Object.entries(topics).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <button className="button secondary" type="submit">
+              Search
+            </button>
+          </form>
+          <nav className="feed-tabs" aria-label="Sort learning requests">
+            {[
+              ["latest", "Latest"],
+              ["top", "Top"],
+              ["unanswered", "Unanswered"],
+            ].map(([id, label]) => (
+              <Link
+                aria-current={
+                  (filters.sort || "latest") === id ? "page" : undefined
+                }
+                className={(filters.sort || "latest") === id ? "active" : ""}
+                href={url({ sort: id, page: "1" })}
+                key={id}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+          {unavailable ? (
+            <div className="empty-state">
+              <h3>The community is nearly ready.</h3>
+              <p>
+                Community publishing is not available yet. You can still browse
+                mentors before posting a request. Existing bookings still work.
+              </p>
+              <Link className="button secondary" href="/mentors">
+                Find a mentor
+              </Link>
+            </div>
+          ) : posts.length ? (
+            posts.map((post) => (
+              <article className="feed-card" key={post.id}>
+                <div className="post-meta">
+                  <span>
+                    {categories[post.category as keyof typeof categories]}
+                  </span>
+                  <span>{post.author_name}</span>
+                  <span>
+                    {new Date(post.created_at).toLocaleDateString("en-IN", {
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC",
+                    })}
+                  </span>
+                </div>
+                <h3>
+                  <Link href={`/posts/${post.id}`}>{post.title}</Link>
+                </h3>
+                <p className="feed-excerpt">{post.stuck_on}</p>
+                <div className="tags">
+                  {post.tags.map((t) => (
+                    <Link key={t} href={url({ topic: t, page: "1" })}>
+                      {topics[t as Topic] || t}
+                    </Link>
+                  ))}
+                </div>
+                {post.image_paths.length > 0 && (
+                  <span className="muted small-copy">
+                    {post.image_paths.length} attached{" "}
+                    {post.image_paths.length === 1 ? "image" : "images"}
+                  </span>
+                )}
+                <div className="feed-card-bottom">
+                  <div>
+                    <span>
+                      <ArrowUp size={15} />
+                      {post.upvotes}
+                    </span>
+                    <span>
+                      <MessageSquare size={15} />
+                      {post.answer_count}
+                    </span>
+                    {post.accepted_answer_id && (
+                      <span className="resolved-label">
+                        Helpful answer accepted
+                      </span>
+                    )}
+                  </div>
+                  <Link href={`/posts/${post.id}`} className="text-link">
+                    Find a mentor for this <ArrowUpRight size={15} />
+                  </Link>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">
+              <MessageSquare size={28} />
+              <h3>
+                {filters.q || filters.topic || filters.category
+                  ? "No requests match yet."
+                  : "Every breakthrough starts somewhere."}
+              </h3>
+              <p>
+                Post the problem you want to work through with a mentor. Include
+                what you tried and where it stopped making sense.
+              </p>
+              <Link className="button" href="/posts/new">
+                Start a conversation <Plus size={15} />
+              </Link>
+            </div>
+          )}
+          <div className="pagination">
+            {page > 1 && (
+              <Link
+                className="text-link"
+                href={url({ page: String(page - 1) })}
+              >
+                Previous page
+              </Link>
+            )}
+            {hasMore && (
+              <Link
+                className="text-link"
+                href={url({ page: String(page + 1) })}
+              >
+                More learning requests <ArrowUpRight size={15} />
+              </Link>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

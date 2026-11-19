@@ -162,6 +162,7 @@ export type Database = {
           mentor_id: string;
           request_key: string;
           slot_id: string;
+          source_post_id: string | null;
           starts_at: string;
           status: string;
           updated_at: string;
@@ -174,6 +175,7 @@ export type Database = {
           mentor_id: string;
           request_key: string;
           slot_id: string;
+          source_post_id?: string | null;
           starts_at: string;
           status?: string;
           updated_at?: string;
@@ -186,6 +188,7 @@ export type Database = {
           mentor_id?: string;
           request_key?: string;
           slot_id?: string;
+          source_post_id?: string | null;
           starts_at?: string;
           status?: string;
           updated_at?: string;
@@ -211,6 +214,233 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "availability_slots";
             referencedColumns: ["id", "mentor_id", "starts_at", "ends_at"];
+          },
+          {
+            foreignKeyName: "bookings_source_post_id_fkey";
+            columns: ["source_post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_post_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_source_post_id_fkey";
+            columns: ["source_post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      community_answers: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          post_id: string;
+        };
+        Insert: {
+          author_id?: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          post_id: string;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          post_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_answers_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_answers_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_post_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_answers_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      community_posts: {
+        Row: {
+          accepted_answer_id: string | null;
+          author_id: string;
+          body: string;
+          category: string;
+          created_at: string;
+          id: string;
+          image_paths: string[];
+          stuck_on: string;
+          tags: string[];
+          title: string;
+        };
+        Insert: {
+          accepted_answer_id?: string | null;
+          author_id?: string;
+          body: string;
+          category: string;
+          created_at?: string;
+          id?: string;
+          image_paths?: string[];
+          stuck_on: string;
+          tags: string[];
+          title: string;
+        };
+        Update: {
+          accepted_answer_id?: string | null;
+          author_id?: string;
+          body?: string;
+          category?: string;
+          created_at?: string;
+          id?: string;
+          image_paths?: string[];
+          stuck_on?: string;
+          tags?: string[];
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "accepted_answer_same_post";
+            columns: ["accepted_answer_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "community_answer_summaries";
+            referencedColumns: ["id", "post_id"];
+          },
+          {
+            foreignKeyName: "accepted_answer_same_post";
+            columns: ["accepted_answer_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "community_answers";
+            referencedColumns: ["id", "post_id"];
+          },
+          {
+            foreignKeyName: "community_posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      community_reports: {
+        Row: {
+          created_at: string;
+          id: number;
+          post_id: string;
+          reason: string;
+          reporter_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: never;
+          post_id: string;
+          reason: string;
+          reporter_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: never;
+          post_id?: string;
+          reason?: string;
+          reporter_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_reports_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_post_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_reports_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      community_votes: {
+        Row: {
+          answer_id: string | null;
+          created_at: string;
+          id: number;
+          post_id: string | null;
+          voter_id: string;
+        };
+        Insert: {
+          answer_id?: string | null;
+          created_at?: string;
+          id?: never;
+          post_id?: string | null;
+          voter_id?: string;
+        };
+        Update: {
+          answer_id?: string | null;
+          created_at?: string;
+          id?: never;
+          post_id?: string | null;
+          voter_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_votes_answer_id_fkey";
+            columns: ["answer_id"];
+            isOneToOne: false;
+            referencedRelation: "community_answer_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_votes_answer_id_fkey";
+            columns: ["answer_id"];
+            isOneToOne: false;
+            referencedRelation: "community_answers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_votes_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_post_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_votes_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_votes_voter_id_fkey";
+            columns: ["voter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -272,9 +502,87 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      community_answer_summaries: {
+        Row: {
+          author_id: string | null;
+          author_name: string | null;
+          body: string | null;
+          created_at: string | null;
+          id: string | null;
+          is_mentor: boolean | null;
+          post_id: string | null;
+          upvotes: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "community_answers_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_answers_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_post_summaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_answers_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "community_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      community_post_summaries: {
+        Row: {
+          accepted_answer_id: string | null;
+          answer_count: number | null;
+          author_id: string | null;
+          author_name: string | null;
+          body: string | null;
+          category: string | null;
+          created_at: string | null;
+          id: string | null;
+          image_paths: string[] | null;
+          stuck_on: string | null;
+          tags: string[] | null;
+          title: string | null;
+          upvotes: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "accepted_answer_same_post";
+            columns: ["accepted_answer_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "community_answer_summaries";
+            referencedColumns: ["id", "post_id"];
+          },
+          {
+            foreignKeyName: "accepted_answer_same_post";
+            columns: ["accepted_answer_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "community_answers";
+            referencedColumns: ["id", "post_id"];
+          },
+          {
+            foreignKeyName: "community_posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Functions: {
+      accept_community_answer: {
+        Args: { p_answer_id: string; p_post_id: string };
+        Returns: undefined;
+      };
       book_free_intro: {
         Args: { p_request_key: string; p_slot_id: string };
         Returns: {
@@ -285,6 +593,29 @@ export type Database = {
           mentor_id: string;
           request_key: string;
           slot_id: string;
+          source_post_id: string | null;
+          starts_at: string;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "bookings";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      book_post_intro: {
+        Args: { p_post_id: string; p_request_key: string; p_slot_id: string };
+        Returns: {
+          created_at: string;
+          ends_at: string;
+          id: string;
+          learner_id: string;
+          mentor_id: string;
+          request_key: string;
+          slot_id: string;
+          source_post_id: string | null;
           starts_at: string;
           status: string;
           updated_at: string;
@@ -306,6 +637,7 @@ export type Database = {
           mentor_id: string;
           request_key: string;
           slot_id: string;
+          source_post_id: string | null;
           starts_at: string;
           status: string;
           updated_at: string;
@@ -318,6 +650,7 @@ export type Database = {
         };
       };
       close_availability: { Args: { p_slot_id: string }; Returns: undefined };
+      community_skill_key: { Args: { p_skill: string }; Returns: string };
       complete_free_intro: {
         Args: { p_booking_id: string };
         Returns: {
@@ -328,6 +661,7 @@ export type Database = {
           mentor_id: string;
           request_key: string;
           slot_id: string;
+          source_post_id: string | null;
           starts_at: string;
           status: string;
           updated_at: string;
@@ -366,6 +700,18 @@ export type Database = {
         }[];
       };
       get_booking_join_url: { Args: { p_booking_id: string }; Returns: string };
+      recommend_post_mentors: {
+        Args: { p_post_id: string };
+        Returns: {
+          accepted_answers: number;
+          answer_upvotes: number;
+          full_name: string;
+          headline: string;
+          matched_tags: string[];
+          mentor_id: string;
+          next_available: string;
+        }[];
+      };
       save_mentor_profile: {
         Args: { p_bio: string; p_expertise: string[]; p_headline: string };
         Returns: undefined;

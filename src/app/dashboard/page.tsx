@@ -26,7 +26,7 @@ export default async function DashboardPage({
           <h1>Room to grow.</h1>
           <p className="lead">Your introductions, all in one place.</p>
         </div>
-        <Link className="button secondary" href="/#mentors">
+        <Link className="button secondary" href="/mentors">
           Find a mentor <ArrowUpRight size={16} />
         </Link>
       </div>
@@ -62,6 +62,15 @@ export default async function DashboardPage({
                   </span>
                 </div>
                 <h2>{otherName}</h2>
+                {booking.source_post_id && (
+                  <Link
+                    className="text-link booking-context"
+                    href={`/posts/${booking.source_post_id}`}
+                  >
+                    View the learning request for this call{" "}
+                    <ArrowUpRight size={14} />
+                  </Link>
+                )}
                 <TimeRange start={booking.starts_at} end={booking.ends_at} />
                 <p className="muted">
                   <Video size={15} /> Free introductory video call
@@ -144,7 +153,7 @@ export default async function DashboardPage({
             Find a mentor and book an introductory call at a time that works for
             you.
           </p>
-          <Link className="button" href="/#mentors">
+          <Link className="button" href="/mentors">
             Explore mentors <ArrowUpRight size={16} />
           </Link>
         </div>

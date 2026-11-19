@@ -27,10 +27,19 @@ export async function bookFreeIntro(
   if (!parsed.success)
     return { error: "Refresh this page and select a valid slot." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("book_free_intro", {
+  const source = form.get("sourcePostId");
+  if (source && !idSchema.safeParse(source).success)
+    return { error: "Refresh and choose a valid learning request." };
+  const params = {
     p_slot_id: parsed.data.slotId,
     p_request_key: parsed.data.requestKey,
-  });
+  };
+  const { error } = source
+    ? await supabase.rpc("book_post_intro", {
+        ...params,
+        p_post_id: String(source),
+      })
+    : await supabase.rpc("book_free_intro", params);
   if (error) return { error: databaseError(error.message) };
   refreshed();
   redirect("/dashboard?notice=booked");

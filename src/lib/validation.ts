@@ -63,6 +63,8 @@ export function safeNext(value: unknown): string {
 }
 
 const databaseMessages: Record<string, string> = {
+  POST_UNAVAILABLE:
+    "This learning request is no longer available. Book from the mentor directory instead.",
   AUTH_REQUIRED: "Please sign in to continue.",
   TRIAL_UNAVAILABLE:
     "You already have a confirmed or completed free introduction with this mentor.",

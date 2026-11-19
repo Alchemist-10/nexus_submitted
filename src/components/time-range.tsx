@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 const subscribe = () => () => {};
 const timezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const serverTimezone = () => "UTC";
-export function TimeRange({ start, end }: { start: string; end: string }) {
+export function TimeRange({ start, end }: { start: string; end?: string }) {
   const zone = useSyncExternalStore(subscribe, timezone, serverTimezone);
   const date = new Intl.DateTimeFormat("en", {
     month: "short",
@@ -22,7 +22,12 @@ export function TimeRange({ start, end }: { start: string; end: string }) {
       <time dateTime={start}>
         {date} · {time.format(new Date(start))}
       </time>
-      –<time dateTime={end}>{time.format(new Date(end))}</time>
+      {end && (
+        <>
+          <span>–</span>
+          <time dateTime={end}>{time.format(new Date(end))}</time>
+        </>
+      )}
       <small>{zone.replaceAll("_", " ")}</small>
     </span>
   );

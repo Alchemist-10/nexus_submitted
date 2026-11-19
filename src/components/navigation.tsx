@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { NavLinks } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { currentUser } from "@/lib/auth/session";
 import { signOut } from "@/features/auth/actions";
 
@@ -28,6 +29,7 @@ export async function Navigation() {
         </Link>
         <NavLinks signedIn={Boolean(user)} />
         <div className="nav-account">
+          <ThemeSwitcher />
           {user ? (
             <AccountMenu
               summary={

@@ -5,9 +5,13 @@ import { useEffect, useRef } from "react";
 export function AccountMenu({
   summary,
   children,
+  className = "",
+  label,
 }: {
   summary: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
+  label?: string;
 }) {
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
@@ -31,13 +35,13 @@ export function AccountMenu({
   return (
     <details
       ref={ref}
-      className="account-menu"
+      className={`account-menu ${className}`}
       onClick={(event) => {
         if ((event.target as Element).closest("a") && ref.current)
           ref.current.open = false;
       }}
     >
-      <summary>{summary}</summary>
+      <summary aria-label={label}>{summary}</summary>
       <div className="account-dropdown">{children}</div>
     </details>
   );

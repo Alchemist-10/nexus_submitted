@@ -35,17 +35,15 @@
   margin-top: 24px;
 }
 .payment-status {
-  color: var(--burgundy);
-  font-weight: 700;
-  font-size: 13px;
-}
-.badge.awaiting_payment {
-  color: var(--burgundy);
-  background: var(--soft);
-}
-.badge.expired {
-  color: var(--muted);
-  background: var(--soft);
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 11px;
+  border: 1px solid;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.5;
 }
 * {
   box-sizing: border-box;
@@ -804,8 +802,11 @@ textarea::placeholder {
 }
 .bookings-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+.sessions-page {
+  max-width: 960px;
 }
 .booking-card-top {
   display: flex;
@@ -815,20 +816,50 @@ textarea::placeholder {
   margin-bottom: 20px;
 }
 .badge {
-  font-size: 9px;
-  letter-spacing: 0.6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  padding: 4px 8px;
+  padding: 5px 11px;
   border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
   background: #f2e9e6;
 }
-.badge.confirmed {
-  background: #f1dfdb;
-  color: #742d43;
+.badge.confirmed,
+.payment-status[data-state="paid"] {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
 }
-.badge.cancelled {
-  color: #6a5b50;
-  background: #f0ebe4;
+.badge.cancelled,
+.payment-status[data-state="action_required"] {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+.badge.completed {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+.badge.awaiting_payment,
+.payment-status[data-state="awaiting_payment"],
+.payment-status[data-state="refund_pending"] {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+.badge.expired,
+.payment-status[data-state="expired"] {
+  color: #475569;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.payment-status[data-state="refunded"] {
+  color: #6b21a8;
+  background: #f3e8ff;
+  border-color: #e9d5ff;
 }
 .booking-card h2 {
   margin-bottom: 10px;

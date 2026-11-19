@@ -21,7 +21,7 @@ export default async function DashboardPage({
     await loadMyBookings();
   const { notice } = await searchParams;
   return (
-    <div className="shell page-space">
+    <div className="shell page-space sessions-page">
       <div className="section-heading">
         <div>
           <span className="eyebrow">YOUR CONNECTIONS</span>
@@ -104,7 +104,7 @@ export default async function DashboardPage({
                     : "Free introductory video call"}
                 </p>
                 {payment && (
-                  <p className="payment-status">
+                  <p className="payment-status" data-state={payment.state}>
                     {paymentStateLabel[payment.state]}
                   </p>
                 )}

@@ -1,15 +1,13 @@
 import Link from "next/link";
+import { SessionRefresh } from "@/components/session-refresh";
+import { EndSessionForm } from "@/components/end-session-form";
 import { RateMentorForm } from "@/components/rate-mentor-form";
 import { ArrowUpRight, CalendarDays, Video } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { loadMyBookings } from "@/features/bookings/queries";
 import { ActionForm } from "@/components/action-form";
 import { TimeRange } from "@/components/time-range";
-import {
-  cancelBooking,
-  completeBooking,
-  saveMeeting,
-} from "@/features/bookings/actions";
+import { cancelBooking, saveMeeting } from "@/features/bookings/actions";
 
 export default async function DashboardPage({
   searchParams,
@@ -31,6 +29,7 @@ export default async function DashboardPage({
           Find a mentor <ArrowUpRight size={16} />
         </Link>
       </div>
+      <SessionRefresh active={bookings.some((b) => b.status === "confirmed")} />
       {notice === "booked" && (
         <p className="feedback success" role="status">
           Your free introduction is confirmed. Your mentor can now add a private
@@ -53,6 +52,7 @@ export default async function DashboardPage({
               "Nexus member";
             const future = new Date(booking.starts_at).getTime() > requestTime;
             const ended = new Date(booking.ends_at).getTime() <= requestTime;
+            const started = !future;
             return (
               <article className="panel booking-card" key={booking.id}>
                 <div className="booking-card-top">
@@ -83,7 +83,7 @@ export default async function DashboardPage({
                       {isMentor ? "Student rating" : "You rated this session"}:{" "}
                       <strong>{rating.score} / 5 stars</strong>
                     </p>
-                  ) : !isMentor && ended ? (
+                  ) : !isMentor && started ? (
                     <RateMentorForm bookingId={booking.id} />
                   ) : null)}
                 {booking.status === "confirmed" && (
@@ -138,18 +138,15 @@ export default async function DashboardPage({
                         </ActionForm>
                       </details>
                     )}
-                    {isMentor && ended && (
-                      <ActionForm
-                        action={completeBooking}
-                        submitLabel="Mark introduction complete"
-                      >
-                        <input
-                          name="bookingId"
-                          value={booking.id}
-                          type="hidden"
-                        />
-                      </ActionForm>
-                    )}
+                    {started &&
+                      (isMentor ? (
+                        <EndSessionForm bookingId={booking.id} />
+                      ) : (
+                        <p className="muted">
+                          When your call is finished, ask your mentor to end
+                          this session in Nexus. Your rating will appear here.
+                        </p>
+                      ))}
                   </>
                 )}
               </article>

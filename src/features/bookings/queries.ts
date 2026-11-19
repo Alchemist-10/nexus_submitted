@@ -36,3 +36,14 @@ export async function loadMyBookings() {
     requestTime: Date.now(),
   };
 }
+
+export async function loadSessionBooking(id: string) {
+  const db = await createSupabaseServerClient();
+  const { data: booking, error } = await db
+    .from("bookings")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error("This session could not be loaded.");
+  return { booking, requestTime: Date.now() };
+}

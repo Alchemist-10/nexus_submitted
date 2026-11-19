@@ -73,7 +73,7 @@ export function safeNext(value: unknown): string {
 const databaseMessages: Record<string, string> = {
   INVALID_RATING: "Choose 1–5 stars.",
   RATING_NOT_READY:
-    "You can rate this mentor once the session has ended and is marked complete.",
+    "Your rating unlocks when the mentor ends this session in Nexus.",
   RATING_ALREADY_SUBMITTED:
     "You have already rated this session. Submitted ratings cannot be changed.",
   POST_UNAVAILABLE:
@@ -91,7 +91,8 @@ const databaseMessages: Record<string, string> = {
   NOT_ALLOWED: "You do not have permission to do that.",
   CANNOT_CANCEL:
     "Only confirmed sessions that have not started can be cancelled.",
-  CANNOT_COMPLETE: "A confirmed session can be completed after its end time.",
+  CANNOT_COMPLETE:
+    "Only the mentor can end a confirmed session, after its scheduled start.",
   SLOT_HAS_BOOKING: "Cancel the confirmed booking before closing this slot.",
   INVALID_SLOT: "Choose a future slot within 90 days, lasting 15–120 minutes.",
   MENTOR_REQUIRED: "Publish your mentor profile before adding availability.",

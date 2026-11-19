@@ -1,5 +1,7 @@
 # Mentor session ratings — 19 November 2026
 
+Update: [Explicit session ending](session-ending-verification.md) now allows a mentor to end a started call early and unlock the rating immediately. The original scheduled-end gating described below is historical.
+
 Implemented the requested 1–5 star rating after a call. The learner sees it in My sessions once the scheduled end has passed and the mentor has marked the booking complete. The saved score replaces the form. The mentor directory, profile, and post recommendations show an average and count, or an honest no-ratings state. Ratings do not alter community upvotes or the recommendation ranking.
 
 Migration `20261119073906_mentor_ratings.sql` is applied to the hosted project. Database types were regenerated. Only the booking learner may submit, through a checked RPC under a booking row lock. Booking-key uniqueness prevents duplicate ratings; identical retries succeed and changing a submitted score is rejected. Table writes are revoked. RLS limits individual records to booking participants; the public aggregate endpoint exposes only listed mentor IDs, averages, and counts, for at most 60 requested IDs.

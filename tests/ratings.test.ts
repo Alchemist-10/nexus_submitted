@@ -40,6 +40,77 @@ async function booking(
 }
 const rate = (id: string, score: number | null, actor = people.learner) =>
   asUser(db, actor, (a) => a.query("select rate_mentor($1,$2)", [id, score]));
+test("mentor can end a started call early, revoke joining, and unlock rating immediately", async () => {
+  const slot = randomUUID(),
+    id = randomUUID();
+  await db.query(
+    "insert into availability_slots(id,mentor_id,starts_at,ends_at) values($1,$2,now()-interval '3 minutes',now()+interval '27 minutes')",
+    [slot, people.mentor],
+  );
+  await db.query(
+    "insert into bookings(id,slot_id,mentor_id,learner_id,request_key,starts_at,ends_at) select $1,id,mentor_id,$2,$3,starts_at,ends_at from availability_slots where id=$4",
+    [id, people.learner, randomUUID(), slot],
+  );
+  await asUser(db, people.mentor, (a) =>
+    a.query(
+      "select set_booking_meeting($1,'https://meet.google.com/nexus-test')",
+      [id],
+    ),
+  );
+  assert.equal(
+    (
+      await asUser(db, people.learner, (a) =>
+        a.query("select get_booking_join_url($1) as url", [id]),
+      )
+    ).rows[0].url,
+    "https://meet.google.com/nexus-test",
+  );
+  await assert.rejects(rate(id, 5), /RATING_NOT_READY/);
+  await assert.rejects(
+    asUser(db, people.learner, (a) =>
+      a.query("select * from complete_free_intro($1)", [id]),
+    ),
+    /NOT_ALLOWED/,
+  );
+  await assert.rejects(
+    asUser(db, people.outsider, (a) =>
+      a.query("select * from complete_free_intro($1)", [id]),
+    ),
+    /NOT_ALLOWED/,
+  );
+  for (let i = 0; i < 2; i++)
+    await asUser(db, people.mentor, (a) =>
+      a.query("select * from complete_free_intro($1)", [id]),
+    );
+  assert.equal(
+    Number(
+      (
+        await db.query(
+          "select count(*) as n from booking_events where booking_id=$1 and action='completed'",
+          [id],
+        )
+      ).rows[0].n,
+    ),
+    1,
+  );
+  await assert.rejects(
+    asUser(db, people.learner, (a) =>
+      a.query("select get_booking_join_url($1)", [id]),
+    ),
+    /OUTSIDE_JOIN_WINDOW/,
+  );
+  await rate(id, 5);
+  const summary = (
+    await asUser(
+      db,
+      null,
+      (a) => a.query("select * from get_mentor_ratings($1)", [[people.mentor]]),
+      "anon",
+    )
+  ).rows[0];
+  assert.equal(Number(summary.average_rating), 5);
+  assert.equal(Number(summary.rating_count), 1);
+});
 test("only the booked learner can rate a completed session after its end", async () => {
   const id = await booking();
   await assert.rejects(rate(id, 5, people.mentor), /NOT_ALLOWED/);

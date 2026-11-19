@@ -1,0 +1,7 @@
+# Ending a call and showing its rating
+
+The user reported that leaving a short Google Meet call did not reveal the rating, and the link could still be used. Inspection showed their booking was still confirmed and its scheduled end was in the future. Replace clock-only completion with an explicit mentor End session action available after the scheduled start. It marks the existing booking completed, revokes further Nexus join access, and immediately permits the booked learner's rating, including in public aggregates before the originally scheduled end. Preserve learner/outsider denial, no pre-start completion, cancellation rules, immutable ratings, and idempotent completion.
+
+Expose ending on the session dashboard and meeting-access page, behind an explanatory confirmation. Show students that they are waiting for the mentor to end the session. On completion the access page directly presents the rating or saved score. Refresh confirmed session screens on return/focus and periodically while visible. Route every join click through a fresh server-side authorization check so an old open page cannot bypass completed/cancelled/expired status by retaining its previous button.
+
+Nexus cannot detect leaving an external Google Meet tab or close Google's room. The host must end the Google meeting for everyone separately. Previously copied Google URLs remain controlled by Google. This change neither claims attendance verification nor automatically completes a real booking. Preserve the user's ongoing booking and demo data; verify with isolated temporary accounts.

@@ -162,7 +162,7 @@ export async function completeBooking(
   });
   if (error) return { error: databaseError(error.message) };
   refreshed();
-  return { success: "Introduction marked complete." };
+  return { success: "Session ended. The student can now rate the mentor." };
 }
 
 export async function saveMeeting(

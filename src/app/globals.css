@@ -1765,3 +1765,33 @@ select:focus-visible {
   background: #f5e7e9;
   font-size: 12px;
 }
+
+.session-refresh {
+  display: block;
+  margin: 14px 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--burgundy);
+  font-size: 12px;
+  cursor: pointer;
+}
+.end-session {
+  text-align: left;
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+}
+.end-session summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--burgundy);
+  cursor: pointer;
+}
+.end-session p {
+  margin: 12px 0;
+}
+.join-panel .session-rating {
+  text-align: left;
+}

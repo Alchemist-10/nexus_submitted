@@ -418,7 +418,7 @@ test("only participants can join inside the time window, and cancellation revoke
   );
 });
 
-test("only the mentor can complete a call, and only after it ends", async () => {
+test("only the mentor can complete a call, and never before its scheduled start", async () => {
   const slot = await makeSlot(db);
   const booking = await book(slot.id);
   await assert.rejects(

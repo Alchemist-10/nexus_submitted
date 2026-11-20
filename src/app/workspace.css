@@ -178,11 +178,12 @@ body {
   box-shadow: none;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   font-family: var(--font-annotation);
-  font-weight: 400;
-  letter-spacing: 1.1px;
-  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  line-height: 1.6;
+  color: var(--ink);
 }
 .text-link {
   font-size: 13px;
@@ -332,8 +333,8 @@ body {
 .studio-free-note {
   display: block;
   font-family: var(--font-annotation);
-  font-size: 10px;
-  color: var(--muted);
+  font-size: 12px;
+  color: var(--ink);
   margin-top: 15px;
 }
 .studio-running-line {
@@ -341,6 +342,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  flex-wrap: wrap;
   padding: 9px 0;
   border-block: 1px solid var(--accent-line);
 }
@@ -351,9 +353,10 @@ body {
 }
 .studio-running-line > span:last-child {
   font-family: var(--font-annotation);
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: var(--ink);
 }
 .studio-illustration {
   width: 100%;
@@ -540,8 +543,7 @@ body {
   margin-bottom: 15px;
 }
 .next-session-card .eyebrow {
-  font-size: 9px;
-  color: var(--muted);
+  color: var(--ink);
 }
 .next-session-card h2 {
   font-family: var(--font-display);
@@ -641,7 +643,7 @@ body {
 }
 .subject-number {
   font-family: var(--font-annotation);
-  font-size: 10px;
+  font-size: 11px;
 }
 .my-profile-card {
   gap: 9px;
@@ -653,6 +655,11 @@ body {
 }
 .my-profile-card strong {
   font-size: 13px;
+}
+.my-profile-card small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
 }
 .my-profile-card div > span {
   font-size: 11px;
@@ -677,8 +684,7 @@ body {
   transform: rotate(-4deg);
 }
 .sidebar-note .eyebrow {
-  font-size: 8px;
-  color: var(--muted);
+  color: var(--ink);
 }
 .sidebar-note h2 {
   font-family: var(--font-display);
@@ -708,9 +714,11 @@ body {
 }
 .feed-heading > span {
   display: block;
-  max-width: 125px;
+  max-width: 180px;
   font-family: var(--font-annotation);
-  font-size: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
   line-height: 1.6;
   letter-spacing: 0.7px;
   text-align: right;
@@ -837,7 +845,7 @@ body {
   font-weight: 400;
 }
 .post-meta {
-  font-size: 11px;
+  font-size: 12px;
   gap: 8px 11px;
 }
 .post-meta > span:first-child {
@@ -846,8 +854,8 @@ body {
   background: transparent;
   font-family: var(--font-annotation);
   text-transform: uppercase;
-  font-size: 10px;
-  font-weight: 400;
+  font-size: 11px;
+  font-weight: 600;
 }
 .feed-excerpt {
   font-size: 13px;
@@ -876,7 +884,7 @@ body {
   gap: 4px;
 }
 .feed-card-bottom .stat-label {
-  font-size: 10px;
+  font-size: 11px;
 }
 .feed-engagement .vote-form {
   margin: 0;
@@ -928,9 +936,6 @@ body {
   border-radius: 5px;
   padding: 21px;
 }
-.discovery-heading .eyebrow {
-  font-size: 8px;
-}
 .discovery-heading h2 {
   font-family: var(--font-display);
   font-size: 21px;
@@ -974,10 +979,10 @@ body {
   margin: 9px 0;
 }
 .mini-mentor .rating-count {
-  font-size: 10px;
+  font-size: 11px;
 }
 .mini-mentor .tags > span {
-  font-size: 10px;
+  font-size: 11px;
 }
 .mini-mentor-cta {
   display: flex;
@@ -1001,9 +1006,6 @@ body {
   padding-top: 22px;
   border-top: 1px solid var(--line);
 }
-.how-it-works-mini .eyebrow {
-  font-size: 8px;
-}
 .how-it-works-mini ol {
   list-style: none;
   padding: 0;
@@ -1015,7 +1017,7 @@ body {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .how-it-works-mini li span {
@@ -1186,11 +1188,11 @@ body {
   margin-bottom: 12px;
 }
 .booking-card-top .eyebrow {
-  font-size: 9px;
-  letter-spacing: 1px;
+  font-size: 12px;
+  letter-spacing: 0.7px;
 }
 .badge {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: capitalize;
   letter-spacing: 0;
   padding: 4px 9px;
@@ -1395,9 +1397,10 @@ body {
   align-items: flex-start;
 }
 .mentor-card-cover span {
-  font-size: 9px;
+  font-size: 11px;
   font-family: var(--font-annotation);
-  font-weight: 400;
+  font-weight: 600;
+  color: var(--ink);
   letter-spacing: 0.7px;
   text-transform: uppercase;
   overflow: hidden;
@@ -1498,7 +1501,7 @@ body {
 }
 .mentor-card-footer > div > span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .mentor-card-cta {
   display: flex;
@@ -1600,6 +1603,9 @@ select {
 .mentor-invite {
   border-radius: var(--radius);
 }
+.mentor-invite .eyebrow {
+  font-size: 12px;
+}
 .how-it-works-mini li span {
   background: transparent;
   padding: 0;
@@ -1608,7 +1614,9 @@ select {
 }
 .footer-colophon {
   font-family: var(--font-annotation);
-  font-size: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
   letter-spacing: 0.6px;
 }
 
@@ -1867,14 +1875,20 @@ select {
     order: 3;
     width: 100%;
   }
+  .feed-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
   .feed-heading > span {
-    max-width: 95px;
-    font-size: 7px;
+    max-width: 100%;
+    text-align: left;
   }
   .feed-heading h2 {
     font-size: 21px;
     line-height: 1.35;
-    margin-bottom: 15px;
+    margin-bottom: 0;
   }
   .feed-compose-prompt {
     font-size: 12px;
@@ -1971,11 +1985,8 @@ select {
     flex-wrap: wrap;
     margin-bottom: 12px;
   }
-  .booking-card-top .eyebrow {
-    font-size: 8px;
-  }
   .badge {
-    font-size: 9px;
+    font-size: 11px;
     padding: 3px 7px;
   }
   .session-person {

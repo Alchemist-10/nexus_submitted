@@ -149,7 +149,7 @@ html[data-theme="dark"] {
   }
   .eyebrow,
   .sidebar-note .eyebrow {
-    color: var(--muted);
+    color: var(--ink);
   }
   .status-dot {
     background: #d88eaa;
@@ -179,7 +179,7 @@ html[data-theme="dark"] {
     color: var(--muted);
   }
   .next-session-card .eyebrow {
-    color: var(--muted);
+    color: var(--ink);
   }
   :is(.next-session-icon, .note-icon, .compose-prompt-icon) {
     background: transparent;

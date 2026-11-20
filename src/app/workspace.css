@@ -2065,7 +2065,7 @@ select {
   .button,
   .feed-card,
   .discovery-card,
-  .theme-menu > summary {
+  .theme-toggle {
     transition: none;
   }
   .discovery-card:hover,

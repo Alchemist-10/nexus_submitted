@@ -6,11 +6,13 @@ html {
 }
 
 /* Appearance lives beside the account controls, including on guest pages. */
-.theme-menu > summary {
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
   width: 38px;
   height: 38px;
   padding: 0;
-  justify-content: center;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--white);
@@ -19,41 +21,15 @@ html {
     border-color 0.2s,
     box-shadow 0.2s;
 }
-.theme-menu > summary:hover,
-.theme-menu[open] > summary {
+.theme-toggle:hover {
   border-color: #b77b91;
   box-shadow: 0 0 0 4px #742d4309;
 }
-.theme-moon {
+.theme-sun {
   display: none;
 }
-.theme-menu .account-dropdown {
-  width: 185px;
-}
-.theme-menu-label {
+.theme-moon {
   display: block;
-  padding: 7px 12px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  color: var(--muted);
-}
-.theme-menu .account-dropdown button {
-  min-height: 40px;
-}
-.theme-menu .account-dropdown button[aria-pressed="true"] {
-  background: var(--soft);
-  color: var(--burgundy);
-}
-.theme-selected {
-  margin-left: auto;
-}
-.theme-menu-note {
-  margin: 6px 12px 5px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 10px;
 }
 
 /* Graphite and oxblood: a distinct night palette, with the same typography. */
@@ -135,25 +111,20 @@ html[data-theme="dark"] {
     background: #3b2a39;
     color: #ffd4e3;
   }
-  .theme-menu > summary {
+  .theme-toggle {
     background: var(--night-raised);
     color: #e6b0c5;
     border-color: #4b3546;
   }
-  .theme-menu > summary:hover,
-  .theme-menu[open] > summary {
+  .theme-toggle:hover {
     border-color: #ba7994;
     box-shadow: 0 0 0 4px #e6b0c50a;
   }
   .theme-sun {
-    display: none;
-  }
-  .theme-moon {
     display: block;
   }
-  .theme-menu .account-dropdown button[aria-pressed="true"] {
-    background: #442c3d;
-    color: #ffd4e3;
+  .theme-moon {
+    display: none;
   }
   .button {
     background: #913f5d;
@@ -468,25 +439,18 @@ html[data-theme="dark"] {
   .nav-account {
     gap: 12px;
   }
-  .account-menu:not(.theme-menu) summary > span:last-of-type {
+  .account-menu summary > span:last-of-type {
     max-width: 85px;
   }
 }
-@media (max-width: 760px) {
-  .theme-menu .account-dropdown {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-  }
-}
 @media (max-width: 480px) {
-  .account-menu:not(.theme-menu) summary > span:last-of-type {
+  .account-menu summary > span:last-of-type {
     display: none;
   }
   .nav-account {
     gap: 10px;
   }
-  .theme-menu > summary {
+  .theme-toggle {
     width: 34px;
     height: 34px;
   }

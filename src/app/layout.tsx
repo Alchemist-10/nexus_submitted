@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Navigation } from "@/components/navigation";
 import { themeInitScript } from "@/lib/theme";
+import { ConnectionMark } from "@/components/connection-mark";
 import "./globals.css";
 import "./workspace.css";
 import "./theme.css";
@@ -28,9 +29,16 @@ export default function RootLayout({
         <Navigation />
         <main id="main">{children}</main>
         <footer className="shell site-footer">
-          <span className="brand">nexus.</span>
-          <p>Good people. Shared knowledge. Your next step.</p>
-          <span>Built for connection.</span>
+          <span className="brand">
+            <span className="brand-mark">
+              <ConnectionMark />
+            </span>
+            nexus.
+          </span>
+          <p>A question. A person. A next step.</p>
+          <span className="footer-colophon">
+            THE LEARNING STUDIO / ENGINEERING STUDENTS
+          </span>
         </footer>
       </body>
     </html>

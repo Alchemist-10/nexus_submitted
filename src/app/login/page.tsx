@@ -3,6 +3,7 @@ import { ActionForm } from "@/components/action-form";
 import { signIn } from "@/features/auth/actions";
 import { safeNext } from "@/lib/validation";
 import { isConfigured } from "@/lib/env";
+import { StudioIllustration } from "@/components/studio-illustration";
 
 export default async function LoginPage({
   searchParams,
@@ -19,6 +20,9 @@ export default async function LoginPage({
           <br />A fresh perspective.
         </h1>
         <p className="lead">Your next conversation is waiting.</p>
+        <div className="auth-studio-art">
+          <StudioIllustration />
+        </div>
       </div>
       <div className="panel auth-panel">
         <h2>Sign in to Nexus</h2>

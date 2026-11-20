@@ -3,7 +3,6 @@ import { Avatar } from "@/components/avatar";
 import { currentProfile } from "@/features/profiles/queries";
 import {
   ArrowUpRight,
-  Layers,
   ChevronDown,
   UserRound,
   Presentation,
@@ -12,6 +11,7 @@ import {
 import { NavLinks } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { ConnectionMark } from "@/components/connection-mark";
 import { currentUser } from "@/lib/auth/session";
 import { signOut } from "@/features/auth/actions";
 
@@ -23,7 +23,7 @@ export async function Navigation() {
       <div className="shell nav-inner">
         <Link href="/" className="brand" aria-label="Nexus home">
           <span className="brand-mark">
-            <Layers size={20} />
+            <ConnectionMark />
           </span>
           nexus<span className="brand-dot">.</span>
         </Link>

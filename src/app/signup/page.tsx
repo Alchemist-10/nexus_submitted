@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { signUp } from "@/features/auth/actions";
 import { isConfigured } from "@/lib/env";
+import { StudioIllustration } from "@/components/studio-illustration";
 
 export default function SignupPage() {
   return (
@@ -17,6 +18,9 @@ export default function SignupPage() {
           Learn something new. Share what you know. Start with one free
           introduction per mentor.
         </p>
+        <div className="auth-studio-art">
+          <StudioIllustration />
+        </div>
       </div>
       <div className="panel auth-panel">
         <h2>Find your people.</h2>

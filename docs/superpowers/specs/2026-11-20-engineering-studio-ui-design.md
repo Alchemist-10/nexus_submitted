@@ -55,3 +55,13 @@ Do not edit database migrations, policies, queries, server actions, API routes, 
 ## Review outcome
 
 The user selected the Engineering Studio direction after reviewing an image showing the ivory/burgundy masthead, notebook connection illustration, subject index, ruled requests, mentor introductions, and an appointment ticket. Follow that visual vocabulary while keeping body text in the previously requested Arial and all displayed account/session data real. The illustration is decorative; no generated face is presented as a real member.
+
+## Implementation and verification
+
+- Added native SVG/CSS connection artwork and a matching masthead mark; no image generation assets, new packages, external fonts, or new database reads are required by the redesign.
+- Reworked the home subject index, request entries, mentor introductions, appointment preview, directory cards, and shared form/detail surfaces. Kept Georgia headings, Arial body text, burgundy branding, semantic booking/payment colours, and the existing appearance selector.
+- On small signed-in screens, hide the decorative hero artwork to keep the personal workspace compact. The next-session preview precedes the feed in both DOM and visual order. Guest mobile retains the illustration. Desktop uses named grid areas for the appointment and discovery rail.
+- Browser checked guest, student, and mentor screens at 1256px, 768px, 390px, and 320px. No observed horizontal overflow or automated accessibility violations in the final saved page states. The existing mentor meeting-link form was expanded and audited without submitting it.
+- Checked appearance selection through the real menu, persistence across navigation, both menus closing with Escape and returning focus, narrow popover bounds, the DSA directory filter returning Aarav, and answer links scrolling to the existing answers section. Reduced motion disables smooth scrolling and presentation transitions.
+- Automated contrast checks cannot resolve the ruled illustration background or some clipped decorative pseudo-elements. Reviewed their colours and geometry separately: notebook/annotation/sticky-note text has a minimum measured ratio of 5.07:1 across the reviewed palettes. Ticket cut-outs stay at the outer edge, outside its padded text. Corrected the light-mode own-post label contrast during review.
+- TypeScript, ESLint, formatting, the six existing theme/session presentation tests, and the production build passed. No business-logic files, API handlers, database migrations, queries, server actions, payment code, or workers were changed. No posts, bookings, payments, or profiles were submitted during verification; isolated sample sessions were signed out.

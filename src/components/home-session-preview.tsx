@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, Video } from "lucide-react";
 import { loadMyBookings } from "@/features/bookings/queries";
-import { TimeRange } from "@/components/time-range";
+import { TimeRange, SessionDateTile } from "@/components/time-range";
 
 export async function HomeSessionPreview({ userId }: { userId: string }) {
   let data;
@@ -39,13 +39,17 @@ export async function HomeSessionPreview({ userId }: { userId: string }) {
           <Video size={18} aria-hidden="true" />
         </span>
       </div>
+      {next && <SessionDateTile start={next.starts_at} />}
       <h2>
         {next
-          ? `A conversation with ${person?.full_name || "your mentor"}`
+          ? person?.full_name || "Your next conversation"
           : "Your first hello is free."}
       </h2>
       {next ? (
-        <TimeRange start={next.starts_at} end={next.ends_at} />
+        <>
+          <TimeRange start={next.starts_at} end={next.ends_at} />
+          <span className="badge confirmed">Confirmed</span>
+        </>
       ) : (
         <p>
           Try one introductory call with each mentor. Find someone who gets

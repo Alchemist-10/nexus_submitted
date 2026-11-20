@@ -20,7 +20,7 @@ export function MentorCard({
   return (
     <Link className="mentor-card discovery-card" href={`/mentors/${m.user_id}`}>
       <div className="mentor-card-cover" aria-hidden="true">
-        <span>LEARN. CONNECT. GROW.</span>
+        <span>MENTOR / {expertiseLabel(m.expertise[0] || "Engineering")}</span>
         <ArrowUpRight size={22} />
       </div>
       <div className="discovery-card-body">

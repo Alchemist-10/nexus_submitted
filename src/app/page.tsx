@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { FeedPostActions } from "@/components/feed-post-actions";
 import { HomeSessionPreview } from "@/components/home-session-preview";
+import { StudioIllustration } from "@/components/studio-illustration";
 import { MentorRating } from "@/components/mentor-rating";
 import { listMentors } from "@/features/mentorship/queries";
 import { expertiseLabel } from "@/features/mentorship/presentation";
@@ -10,7 +11,6 @@ import { currentProfile } from "@/features/profiles/queries";
 import {
   ArrowUpRight,
   MessageSquare,
-  Video,
   Plus,
   Search,
   Compass,
@@ -61,84 +61,49 @@ export default async function CommunityPage({
     <div
       className={`shell community-shell ${profile ? "signed-in-community" : "guest-community"}`}
     >
-      {profile ? (
-        <section className="workspace-welcome">
-          <div>
-            <span className="eyebrow">
-              <span className="status-dot" /> YOUR NEXT CHAPTER
-            </span>
-            <h1>
-              Hey {profile.full_name.split(" ")[0]},<br />
-              <span className="heading-accent">what’s on your mind?</span>
-            </h1>
-            <p>
-              A tricky problem. A big decision. Find someone to work through it
-              with.
-            </p>
-            <div className="button-row">
-              <Link className="button" href="/posts/new">
-                <Plus size={17} aria-hidden="true" /> Share where you’re stuck
-              </Link>
-              <Link className="text-link" href="/mentors">
-                Explore mentors <ArrowUpRight size={16} aria-hidden="true" />
-              </Link>
-            </div>
+      <section
+        className={`studio-hero ${profile ? "studio-hero-personal" : ""}`}
+      >
+        <div className="studio-hero-copy">
+          <span className="eyebrow">
+            01 / THE LEARNING STUDIO
+            {profile && (
+              <span className="studio-greeting">
+                Hey, {profile.full_name.split(" ")[0]}.
+              </span>
+            )}
+          </span>
+          <h1>
+            Good questions.
+            <br />
+            <em>Better conversations.</em>
+          </h1>
+          <p>Stuck on the approach? Find someone to work through it with.</p>
+          <div className="button-row">
+            <Link className="button" href="/mentors">
+              Find a mentor <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+            <Link className="text-link" href="/posts/new">
+              Share where you’re stuck
+            </Link>
           </div>
-          <Suspense
-            fallback={
-              <div className="next-session-card">
-                <span className="eyebrow">YOUR NEXT CONVERSATION</span>
-                <h2>A little time. A new perspective.</h2>
-                <Link className="text-link" href="/dashboard">
-                  View your sessions <ArrowUpRight size={16} />
-                </Link>
-              </div>
-            }
-          >
-            <HomeSessionPreview userId={profile.id} />
-          </Suspense>
-        </section>
-      ) : (
-        <section className="community-hero">
-          <div>
-            <span className="eyebrow">
-              FOR ENGINEERING STUDENTS. FROM PEOPLE WHO GET IT.
-            </span>
-            <h1>
-              Stuck on the approach?
-              <br />
-              <em>Find your person.</em>
-            </h1>
-            <p>
-              Some things click when someone walks you through them. Share the
-              problem. Find a mentor. Work it out together.
-            </p>
-            <div className="button-row">
-              <Link className="button" href="/posts/new">
-                <Plus size={17} />
-                Post where you’re stuck
-              </Link>
-              <Link className="text-link" href="/mentors">
-                Explore mentors <ArrowUpRight size={16} />
-              </Link>
-            </div>
-          </div>
-          <div className="hero-callout">
-            <Video size={28} strokeWidth={1.3} />
-            <h2>
-              More than
-              <br />
-              another answer.
-            </h2>
-            <p>
-              A person who listens.
-              <br />
-              An approach you understand.
-            </p>
-            <span>One free introductory call per mentor.</span>
-          </div>
-        </section>
-      )}
+          <span className="studio-free-note">
+            Your first introduction with each mentor is free.
+          </span>
+        </div>
+        <StudioIllustration
+          people={mentors.slice(0, 2).map((m) => ({
+            id: m.user_id,
+            name: m.profile?.full_name || "Nexus mentor",
+            path: m.profile?.avatar_path,
+            variant: m.profile?.avatar_variant,
+          }))}
+        />
+      </section>
+      <div className="studio-running-line">
+        <span>A little guidance goes a long way.</span>
+        <span>CODING / PROJECTS / ACADEMICS / CAREERS</span>
+      </div>
       <div className="feed-layout">
         <aside className="feed-sidebar">
           {profile && (
@@ -163,9 +128,12 @@ export default async function CommunityPage({
               className={!filters.category ? "active" : ""}
               href={url({ category: "", page: "1" })}
             >
-              <LayoutGrid size={17} aria-hidden="true" /> All requests
+              <span className="subject-number" aria-hidden="true">
+                00
+              </span>
+              <LayoutGrid size={16} aria-hidden="true" /> All requests
             </Link>
-            {Object.entries(categories).map(([id, label]) => {
+            {Object.entries(categories).map(([id, label], index) => {
               const Icon = categoryIcons[id as keyof typeof categoryIcons];
               return (
                 <Link
@@ -173,7 +141,10 @@ export default async function CommunityPage({
                   key={id}
                   href={url({ category: id, page: "1" })}
                 >
-                  <Icon size={17} aria-hidden="true" />
+                  <span className="subject-number" aria-hidden="true">
+                    0{index + 1}
+                  </span>
+                  <Icon size={16} aria-hidden="true" />
                   {label}
                 </Link>
               );
@@ -181,11 +152,11 @@ export default async function CommunityPage({
           </nav>
           <div className="sidebar-note">
             <span className="eyebrow">YOU’VE BEEN THERE.</span>
-            <h3>
+            <h2>
               Help someone
               <br />
               get unstuck.
-            </h3>
+            </h2>
             <p>
               Share your approach. Build trust through useful contributions.
             </p>
@@ -194,12 +165,29 @@ export default async function CommunityPage({
             </Link>
           </div>
         </aside>
+        {profile && (
+          <div className="feed-next-session">
+            <Suspense
+              fallback={
+                <div className="next-session-card">
+                  <span className="eyebrow">YOUR NEXT CONVERSATION</span>
+                  <h2>A little time. A new perspective.</h2>
+                  <Link className="text-link" href="/dashboard">
+                    View your sessions <ArrowUpRight size={16} />
+                  </Link>
+                </div>
+              }
+            >
+              <HomeSessionPreview userId={profile.id} />
+            </Suspense>
+          </div>
+        )}
         <section className="feed-main" aria-label="Learning requests">
           <div className="feed-heading">
             <h2>
-              Learning, in good company<span className="heading-dot">.</span>
+              The working notes<span className="heading-dot">.</span>
             </h2>
-            <span>Questions worth a conversation.</span>
+            <span>QUESTIONS WORTH A CONVERSATION</span>
           </div>
           <Link className="feed-compose-prompt" href="/posts/new">
             <span className="compose-prompt-icon">

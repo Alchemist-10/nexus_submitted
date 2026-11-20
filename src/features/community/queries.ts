@@ -5,6 +5,7 @@ import type { PostSummary, AnswerSummary } from "./database";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isConfigured } from "@/lib/env";
 import { categories, topics } from "./shared";
+import { postSearchFilter } from "./search";
 
 export async function loadFeed(
   filters: {
@@ -20,19 +21,12 @@ export async function loadFeed(
     return { posts: [], votedPostIds: [], hasMore: false, unavailable: false };
   const db = await createSupabaseServerClient();
   let query = db.from("community_post_summaries").select("*");
-  if (filters.category && filters.category in categories)
+  if (filters.category && Object.hasOwn(categories, filters.category))
     query = query.eq("category", filters.category);
-  if (filters.topic && filters.topic in topics)
+  if (filters.topic && Object.hasOwn(topics, filters.topic))
     query = query.contains("tags", [filters.topic]);
-  // Escape LIKE syntax; never interpolate a PostgREST OR expression.
-  if (filters.q?.trim())
-    query = query.ilike(
-      "title",
-      `%${filters.q
-        .trim()
-        .slice(0, 100)
-        .replace(/[\\%_]/g, "\\$&")}%`,
-    );
+  const searchFilter = postSearchFilter(filters.q);
+  if (searchFilter) query = query.or(searchFilter);
   if (filters.sort === "unanswered") query = query.eq("answer_count", 0);
   if (filters.sort === "top")
     query = query.order("upvotes", { ascending: false });

@@ -783,6 +783,27 @@ body {
   padding: 9px 0 12px;
   font-size: 13px;
 }
+.search-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.search-summary > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.search-summary strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.search-summary .text-link {
+  font-size: 12px;
+}
 .feed-card {
   position: relative;
   counter-increment: working-note;

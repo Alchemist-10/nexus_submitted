@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { loadFeed } from "@/features/community/queries";
 import { categories, topics, type Topic } from "@/features/community/shared";
+import { normalizeSearch } from "@/features/community/search";
 export default async function CommunityPage({
   searchParams,
 }: {
@@ -36,6 +37,7 @@ export default async function CommunityPage({
   }>;
 }) {
   const filters = await searchParams;
+  const search = normalizeSearch(filters.q);
   const profile = await currentProfile();
   const [{ posts, votedPostIds, hasMore, unavailable }, mentors] =
     await Promise.all([loadFeed(filters, profile?.id), listMentors()]);
@@ -198,7 +200,17 @@ export default async function CommunityPage({
               Ask the community <ArrowUpRight size={16} aria-hidden="true" />
             </span>
           </Link>
-          <form method="get" className="feed-search">
+          <form
+            method="get"
+            className="feed-search"
+            key={JSON.stringify([
+              search,
+              filters.category,
+              filters.topic,
+              filters.sort,
+              page,
+            ])}
+          >
             <input
               type="hidden"
               name="category"
@@ -210,8 +222,9 @@ export default async function CommunityPage({
               <input
                 name="q"
                 aria-label="Search learning requests"
-                placeholder="Search a problem or question"
-                defaultValue={filters.q}
+                placeholder="Search titles, details or topics"
+                defaultValue={search}
+                maxLength={100}
               />
             </label>
             <select
@@ -248,6 +261,31 @@ export default async function CommunityPage({
               </Link>
             ))}
           </nav>
+          {(search || filters.topic || filters.category) && (
+            <div className="search-summary" role="status">
+              <span>
+                {search ? (
+                  <>
+                    Results for <strong>“{search}”</strong>
+                  </>
+                ) : (
+                  "Filtered learning requests"
+                )}
+              </span>
+              <Link
+                className="text-link"
+                href={url({
+                  q: "",
+                  category: "",
+                  topic: "",
+                  sort: "latest",
+                  page: "1",
+                })}
+              >
+                {search ? "Clear search & filters" : "Clear filters"}
+              </Link>
+            </div>
+          )}
           {unavailable ? (
             <div className="empty-state">
               <h3>The community is nearly ready.</h3>
@@ -333,7 +371,7 @@ export default async function CommunityPage({
             <div className="empty-state">
               <MessageSquare size={28} />
               <h3>
-                {filters.q || filters.topic || filters.category
+                {search || filters.topic || filters.category
                   ? "No requests match yet."
                   : "Every breakthrough starts somewhere."}
               </h3>

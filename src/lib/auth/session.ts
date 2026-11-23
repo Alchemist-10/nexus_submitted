@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { isConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/validation";
 
 export const currentUser = cache(async () => {
   if (!isConfigured()) return null;
@@ -15,9 +16,9 @@ export const currentUser = cache(async () => {
   return user;
 });
 
-export async function requireUser() {
+export async function requireUser(next = "/dashboard") {
   if (!isConfigured()) redirect("/setup");
   const user = await currentUser();
-  if (!user) redirect("/login?next=/dashboard");
+  if (!user) redirect(`/login?next=${encodeURIComponent(safeNext(next))}`);
   return user;
 }

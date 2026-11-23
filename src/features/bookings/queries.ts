@@ -1,13 +1,15 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function loadMyBookings() {
+export async function loadMyBookings(bookingId?: string) {
   const supabase = await createSupabaseServerClient();
-  const { data: bookings, error } = await supabase
+  let query = supabase
     .from("bookings")
     .select("*")
     .order("starts_at", { ascending: false })
     .limit(100);
+  if (bookingId) query = query.eq("id", bookingId);
+  const { data: bookings, error } = await query;
   if (error) throw new Error("Your sessions could not be loaded.");
   const ids = [
     ...new Set(

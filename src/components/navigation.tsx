@@ -14,6 +14,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ConnectionMark } from "@/components/connection-mark";
 import { currentUser } from "@/lib/auth/session";
 import { signOut } from "@/features/auth/actions";
+import { NotificationBell } from "@/components/notification-bell";
 
 export async function Navigation() {
   const user = await currentUser();
@@ -30,6 +31,7 @@ export async function Navigation() {
         <NavLinks signedIn={Boolean(user)} />
         <div className="nav-account">
           <ThemeSwitcher />
+          {user && <NotificationBell />}
           {user ? (
             <AccountMenu
               summary={

@@ -5,6 +5,7 @@ import { ConnectionMark } from "@/components/connection-mark";
 import "./globals.css";
 import "./workspace.css";
 import "./theme.css";
+import "./notifications.css";
 
 export const metadata: Metadata = {
   title: {

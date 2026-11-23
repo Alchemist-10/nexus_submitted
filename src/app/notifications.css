@@ -1,0 +1,179 @@
+.notification-bell {
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--burgundy);
+}
+.notification-bell:hover {
+  border-color: var(--burgundy);
+}
+.notification-count {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  background: var(--burgundy);
+  color: var(--paper);
+  font:
+    700 11px/1.5 Arial,
+    sans-serif;
+  min-width: 20px;
+  padding: 1px 4px;
+  border-radius: 20px;
+  text-align: center;
+  border: 2px solid var(--paper);
+}
+.inbox-page {
+  max-width: 1000px;
+}
+.inbox-emblem {
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--burgundy);
+}
+.inbox-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-block: 1px solid var(--line);
+  padding: 16px 0;
+}
+.inbox-toolbar > div,
+.notification-entry-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.inbox-toolbar p {
+  margin: 0;
+}
+.inbox-read-form {
+  margin: 0;
+  gap: 0;
+}
+.inbox-read-form fieldset,
+.inbox-read-form > div:empty {
+  display: none;
+}
+.inbox-read-form .button {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.notification-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.notification-entry {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 18px;
+  padding: 28px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.notification-entry.is-unread {
+  background: var(--white);
+  border-left: 3px solid var(--burgundy);
+  padding-left: 13px;
+}
+.notification-entry-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  color: var(--burgundy);
+  border-radius: 50%;
+}
+.notification-entry h2 {
+  font-size: 25px;
+  margin: 7px 0 10px;
+}
+.notification-entry p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.notification-entry .time-range {
+  margin-bottom: 16px;
+}
+.notification-entry-actions .text-link {
+  font-size: 13px;
+}
+.inbox-empty {
+  text-align: center;
+  padding: 56px 20px;
+  margin: 24px 0;
+}
+.inbox-empty > svg {
+  color: var(--burgundy);
+}
+.inbox-empty h2 {
+  font-size: 30px;
+  margin: 16px 0 8px;
+}
+.inbox-empty p {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.inbox-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px 0;
+  font-size: 13px;
+}
+.inbox-footnote {
+  font-size: 12px;
+  margin-top: 24px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .notification-bell {
+    width: 34px;
+    height: 34px;
+  }
+  .nav-account {
+    gap: 9px;
+  }
+  .inbox-emblem {
+    display: none;
+  }
+  .inbox-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .notification-entry {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 12px;
+    padding: 22px 10px;
+  }
+  .notification-entry.is-unread {
+    padding-left: 7px;
+  }
+  .notification-entry-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .notification-entry-icon svg {
+    width: 15px;
+  }
+  .notification-entry h2 {
+    font-size: 22px;
+  }
+}

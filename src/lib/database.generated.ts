@@ -609,6 +609,79 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          available_at: string;
+          booking_id: string;
+          counterpart_name: string;
+          created_at: string;
+          dedupe_key: string;
+          ends_at: string;
+          id: string;
+          kind: string;
+          published_at: string | null;
+          read_at: string | null;
+          recipient_id: string;
+          session_kind: string;
+          starts_at: string;
+          suppressed_at: string | null;
+        };
+        Insert: {
+          available_at: string;
+          booking_id: string;
+          counterpart_name: string;
+          created_at?: string;
+          dedupe_key: string;
+          ends_at: string;
+          id?: string;
+          kind: string;
+          published_at?: string | null;
+          read_at?: string | null;
+          recipient_id: string;
+          session_kind: string;
+          starts_at: string;
+          suppressed_at?: string | null;
+        };
+        Update: {
+          available_at?: string;
+          booking_id?: string;
+          counterpart_name?: string;
+          created_at?: string;
+          dedupe_key?: string;
+          ends_at?: string;
+          id?: string;
+          kind?: string;
+          published_at?: string | null;
+          read_at?: string | null;
+          recipient_id?: string;
+          session_kind?: string;
+          starts_at?: string;
+          suppressed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "member_activity_counts";
+            referencedColumns: ["profile_id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_path: string | null;
@@ -903,6 +976,29 @@ export type Database = {
           mentor_id: string;
           rating_count: number;
         }[];
+      };
+      mark_notifications_read: { Args: { p_id?: string }; Returns: undefined };
+      notification_claim_jobs: {
+        Args: { p_limit?: number };
+        Returns: {
+          id: string;
+          lease_token: string;
+        }[];
+      };
+      notification_finish_job: {
+        Args: {
+          p_error?: string;
+          p_id: string;
+          p_outcome: string;
+          p_provider_id?: string;
+          p_token: string;
+        };
+        Returns: boolean;
+      };
+      notification_job_status: { Args: never; Returns: Json };
+      notification_prepare_job: {
+        Args: { p_id: string; p_token: string };
+        Returns: Json;
       };
       payment_attach_order: {
         Args: {

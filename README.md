@@ -17,13 +17,14 @@ A clean rebuild of the Nexus mentorship platform. The original project stays in 
 - Availability entered in the browser's local timezone and stored as `timestamptz`.
 - Transactional booking, stable retry keys, one free call per pair, and database-enforced participant overlap protection across learner/mentor roles.
 - Participant-only session dashboard and booking history.
+- Private notification inbox with unread counts, booking updates, and durable email jobs for 24-hour/15-minute reminders and missing meeting links. Local email previews are the default.
 - Razorpay test checkout for follow-ups after a completed free introduction, mentor-set INR prices, ten-minute reservations, server-verified capture, and tracked full refunds for pre-start cancellation.
 - Cancellation before the start time releases both the slot and free introduction. Only the mentor can end a confirmed session after its scheduled start, including when the call finishes early.
 - Private meeting links, available only to confirmed participants within the join window.
 - One-time 1�5 star mentor ratings from the booked learner after the mentor ends a started session, with public averages and counts.
 - Executable migrations, local fixtures, SQL authorization tests, input validation tests, CI, and a production build.
 
-Payments run only in Razorpay test mode. Real gateway testing requires local test keys and a public HTTPS webhook endpoint; simulated provider tests are labelled separately. Live charges and mentor payouts are not enabled. Automated email reminders, Redis, and integrated video rooms are later milestones. The app uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
+Payments run only in Razorpay test mode. Real gateway testing requires local test keys and a public HTTPS webhook endpoint; simulated provider tests are labelled separately. Live charges and mentor payouts are not enabled. Notifications use a separate durable Postgres queue and worker; see [notification setup and verification](docs/notifications-verification.md). Redis and integrated video rooms are later milestones. The app uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
 
 ## Test payments
 
@@ -141,7 +142,7 @@ Mentor matching requires overlap between request tags and normalized declared ex
 
 `post-images` is a public Storage bucket explicitly approved by the owner. Only authenticated owners can upload/delete within their UUID path. The form checks raster signatures and limits uploads to three PNG/JPEG/WebP files of at most 3 MiB each. Text and code render as escaped plain text. Images and public discussions should never contain credentials or private student information. Reports are visible only to their reporter and privileged database operators; review them in Supabase until the moderation dashboard is built.
 
-The feed uses pages of 15; post detail currently loads up to 100 answers. Search currently matches titles. There is no automatic image understanding, spam detection, or semantic ranking. See [community verification](docs/community-verification.md) and [rating verification](docs/ratings-verification.md) for evidence and limits.
+The feed uses pages of 15; post detail currently loads up to 100 answers. Search matches titles, details, the point of confusion, and recognized topic tags. There is no automatic image understanding, spam detection, or semantic ranking. See [community verification](docs/community-verification.md) and [rating verification](docs/ratings-verification.md) for evidence and limits.
 
 ## Verify
 
@@ -193,6 +194,6 @@ The database is authoritative: narrow RPCs validate the authenticated identity a
 
 ## Next milestones
 
-1. Optional paid offerings after the free introduction; verified server-side checkout, temporary slot holds, payment history, refunds, and reconciliation.
-2. Durable notification outbox, Redis/BullMQ workers, reminders, and authorized realtime notifications.
-3. Community notifications, shared rate limits, moderation tools, semantic mentor matching evaluated against the topic baseline, monitoring, and campus pilot evidence.
+1. Password recovery and confirmation resend.
+2. Shared rate limits, upload quotas, and mentor/moderation controls.
+3. Monitoring, reproducible synthetic load tests, and broader browser regression coverage. Payments stay test-only for the portfolio demonstration.

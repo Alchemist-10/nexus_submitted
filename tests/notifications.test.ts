@@ -11,6 +11,33 @@ import {
 } from "./helpers/database";
 
 let db: DB;
+test("dispatch nonces are service-only, expire, and reject replay atomically", async () => {
+  const nonce = randomUUID(),
+    timestamp = Math.floor(Date.now() / 1000);
+  await assert.rejects(
+    asUser(db, people.learner, (a) =>
+      a.query("select claim_worker_dispatch($1,$2)", [nonce, timestamp]),
+    ),
+    /permission denied/,
+  );
+  const claim = () =>
+    trusted((a) =>
+      a.query("select claim_worker_dispatch($1,$2) as ok", [nonce, timestamp]),
+    );
+  assert.equal((await claim()).rows[0].ok, true);
+  assert.equal((await claim()).rows[0].ok, false);
+  assert.equal(
+    (
+      await trusted((a) =>
+        a.query("select claim_worker_dispatch($1,$2) as ok", [
+          randomUUID(),
+          timestamp - 300,
+        ]),
+      )
+    ).rows[0].ok,
+    false,
+  );
+});
 before(async () => {
   db = await createDatabase();
 });
@@ -162,6 +189,24 @@ test("recipient-only inbox, immutable content, private jobs and service-only RPC
       /permission denied/,
     );
   }
+});
+
+test("hosted preview bucket stays private and ordinary accounts cannot upload preview files", async () => {
+  const bucket = (
+    await db.query(
+      "select public,allowed_mime_types from storage.buckets where id='notification-previews'",
+    )
+  ).rows[0];
+  assert.equal(bucket.public, false);
+  for (const user of [people.learner, people.mentor])
+    await assert.rejects(
+      asUser(db, user, (a) =>
+        a.query(
+          "insert into storage.objects(bucket_id,name) values('notification-previews','private.html')",
+        ),
+      ),
+      /row-level security/,
+    );
 });
 
 test("last-minute bookings schedule only future reminders", async () => {

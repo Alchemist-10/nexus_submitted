@@ -162,6 +162,29 @@ test("invalid config fails closed; real email requires an exact recipient allowl
   assert.equal(calls, 0);
 });
 
+test("hosted previews require private cloud persistence and never fall back to local files or email", async () => {
+  const m = message();
+  const cfg = { ...config(), previewStorage: "supabase" as const };
+  await assert.rejects(sendNotification(m, cfg), /CLOUD_PREVIEW_REQUIRED/);
+  const writes: string[] = [];
+  const r = await sendNotification(m, cfg, async (id, content) => {
+    writes.push(id);
+    assert.match(content.html, /Open your session/);
+  });
+  assert.equal(r.outcome, "previewed");
+  assert.deepEqual(writes, [m.id]);
+  await assert.rejects(
+    sendNotification(m, cfg, async () => {
+      throw new Error("storage unavailable");
+    }),
+    /storage unavailable/,
+  );
+  assert.throws(
+    () => deliveryConfig({ NOTIFICATION_PREVIEW_STORAGE: "public" }),
+    /INVALID_PREVIEW_STORAGE/,
+  );
+});
+
 test("provider retries use identical bodies and idempotency keys; failures are sanitized", async () => {
   const cfg = {
     ...config(),

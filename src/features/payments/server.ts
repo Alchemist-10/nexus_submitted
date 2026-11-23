@@ -187,14 +187,15 @@ export async function verifyPayment(
   // Re-fetch order and payments rather than trusting the browser's success flag.
   await reconcileBooking(id);
 }
-export async function processPaymentJobs(bookingId?: string) {
+export async function processPaymentJobs(bookingId?: string, limit = 5) {
+  z.number().int().min(1).max(5).parse(limit);
   const db = paymentAdmin(),
     api = gateway();
   const jobs = z.array(jobSchema).parse(
     checked(
       await db.rpc("payment_claim_jobs", {
         ...(bookingId ? { p_booking_id: bookingId } : {}),
-        p_limit: 5,
+        p_limit: limit,
       }),
     ),
   );

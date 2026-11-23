@@ -914,6 +914,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      claim_worker_dispatch: {
+        Args: { p_nonce: string; p_timestamp: number };
+        Returns: boolean;
+      };
       close_availability: { Args: { p_slot_id: string }; Returns: undefined };
       community_skill_key: { Args: { p_skill: string }; Returns: string };
       complete_free_intro: {

@@ -46,10 +46,27 @@ export function notificationStore(): NotificationStore {
       ) === true,
   };
 }
-export async function processNotificationJobs() {
+export async function processNotificationJobs(limit = 10) {
   const config = deliveryConfig(); // Fail closed before claiming anything.
-  return runNotificationBatch(notificationStore(), (message) =>
-    sendNotification(message, config),
+  const db = notificationAdmin();
+  return runNotificationBatch(
+    notificationStore(),
+    (message) =>
+      sendNotification(message, config, async (id, content) => {
+        for (const [extension, body, type] of [
+          ["html", content.html, "text/html"],
+          ["txt", content.text, "text/plain"],
+        ]) {
+          const { error } = await db.storage
+            .from("notification-previews")
+            .upload(`${id}.${extension}`, Buffer.from(body), {
+              contentType: type,
+              upsert: true,
+            });
+          if (error) throw new Error("PRIVATE_PREVIEW_UPLOAD_FAILED");
+        }
+      }),
+    limit,
   );
 }
 export async function notificationStatus() {

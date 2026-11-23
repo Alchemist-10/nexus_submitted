@@ -1,199 +1,243 @@
+<div align="center">
+
 # Nexus
 
-A clean rebuild of the Nexus mentorship platform. The original project stays in `../Nexus_submitted/` as a reference. The app connects engineering students to mentors through learning requests, useful community explanations, and one free introductory booking per learner-mentor pair.
+### A question. A person. A next step.
 
-## What works
+A mentorship platform for engineering students to share where they are stuck, find the right mentor, and work through the approach together.
 
-- Identifiable member profiles with personal Posts/Answers, public contribution counts, and owner-only editing.
-- Distinct default illustrated avatars for every account, plus optional personal photo uploads.
+[![Nexus checks](https://github.com/Alchemist-10/nexus_submitted/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Alchemist-10/nexus_submitted/actions/workflows/ci.yml)
+![Next.js](https://img.shields.io/badge/Next.js-16-30252a?style=flat-square&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-742d43?style=flat-square&logo=postgresql&logoColor=white)
 
-- Community feed with latest/top/unanswered views, category/topic filters, title search, and pagination.
-- Learning requests with context, the specific point of confusion, topic tags, and up to three public raster images.
-- Answers, unique reversible upvotes, author-accepted answers, owner deletion, and private reports for manual review.
-- Explainable mentor recommendations using topic overlap, actual answer evidence, and open introductory slots.
-- Booking from a post preserves its context for both participants.
-- Email/password signup, email confirmation, sign-in, and sign-out using cookie-based Supabase SSR authentication.
-- Public mentor discovery and self-service mentor profiles.
-- Availability entered in the browser's local timezone and stored as `timestamptz`.
-- Transactional booking, stable retry keys, one free call per pair, and database-enforced participant overlap protection across learner/mentor roles.
-- Participant-only session dashboard and booking history.
-- Private notification inbox with unread counts, booking updates, and durable email jobs for 24-hour/15-minute reminders and missing meeting links. Local email previews are the default.
-- Razorpay test checkout for follow-ups after a completed free introduction, mentor-set INR prices, ten-minute reservations, server-verified capture, and tracked full refunds for pre-start cancellation.
-- Cancellation before the start time releases both the slot and free introduction. Only the mentor can end a confirmed session after its scheduled start, including when the call finishes early.
-- Private meeting links, available only to confirmed participants within the join window.
-- One-time 1�5 star mentor ratings from the booked learner after the mentor ends a started session, with public averages and counts.
-- Executable migrations, local fixtures, SQL authorization tests, input validation tests, CI, and a production build.
+**[Explore the live demo](https://nexus-mentorship-akshay-vss-projects.vercel.app)** · [Architecture](#architecture) · [Quick start](#quick-start) · [Documentation](#documentation)
 
-Payments run only in Razorpay test mode. Real gateway testing requires local test keys and a public HTTPS webhook endpoint; simulated provider tests are labelled separately. Live charges and mentor payouts are not enabled. Notifications use a separate durable Postgres queue and worker; see [notification setup and verification](docs/notifications-verification.md). Redis and integrated video rooms are later milestones. The app uses external HTTPS meeting links; it does not host video calls or prevent a participant from sharing an external meeting URL.
+</div>
 
-## Test payments
+---
 
-Each learner gets one free introduction with each mentor. Complete that call first; then choose a follow-up slot and continue to payment. Mentors set a price per published session in Mentor studio. Aarav and Meera's demo follow-ups are INR 199. An ongoing checkout has a fixed price and reserves both participants' schedules for ten minutes. Payment must be verified as captured before meeting access is possible. See the [approved design](docs/superpowers/specs/2026-11-19-paid-bookings-design.md) and [verification record](docs/payments-verification.md).
+## Overview
 
-Add these values to the existing ignored `.env.local`, keeping the current Supabase public configuration:
+Nexus connects engineering students with people who can help them reason through coding problems, project decisions, academic concepts, and career questions. A learning request captures the problem and the exact point of confusion; relevant mentors can then offer an explanation or continue the conversation in a one-to-one session.
 
-```dotenv
-RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your_test_key_secret
-RAZORPAY_WEBHOOK_SECRET=your_chosen_webhook_secret
-SUPABASE_SECRET_KEY=your_server_only_supabase_secret
+Each student receives **one free introductory call per mentor**. Completing that introduction unlocks optional follow-up bookings. The community feed gives those conversations context, while profiles, contributions, and completed-session ratings help students choose whom to approach.
+
+> **Portfolio release:** the deployed application includes sample accounts and content. Payments use Razorpay test mode, and notification emails are stored as private previews. No real charges or automated mentor payouts are enabled.
+
+## The experience
+
+1. **Share the context.** Publish a learning request with text, code, topic tags, and up to three images.
+2. **Find a relevant mentor.** Explore recommendations based on expertise, contribution evidence, and available introductory slots.
+3. **Book a conversation.** Choose a time; Nexus checks eligibility and schedule conflicts before confirming the session.
+4. **Work through it together.** Open the mentor-provided meeting link through the private session page.
+5. **Reflect and continue.** Once the mentor ends the session, leave a rating or book a follow-up through sandbox checkout.
+
+## Product capabilities
+
+| Area                        | Capabilities                                                                                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Learning requests**       | Text and image posts, contextual problem descriptions, category and topic filters, search, and paginated latest/top/unanswered feeds.                |
+| **Community contributions** | Answers, reversible upvotes, author-accepted explanations, owner deletion, and private reports for manual review.                                    |
+| **Mentor discovery**        | Public expertise profiles, topic-based recommendations, availability previews, and session-rating summaries.                                         |
+| **Booking and sessions**    | One free introduction per student–mentor pair, timezone-aware scheduling, conflict protection, cancellation, private meeting access, and completion. |
+| **Follow-up checkout**      | Mentor-set INR prices, ten-minute slot reservations, verified Razorpay test payments, cancellation refunds, and recovery jobs.                       |
+| **Notifications**           | A private inbox, unread counts, booking updates, 24-hour and 15-minute reminders, and a mentor alert when a meeting link is missing.                 |
+| **Member workspace**        | Individual profiles, contribution history, illustrated or uploaded avatars, session dashboards, and light/dark themes.                               |
+
+## Architecture
+
+Nexus uses Next.js for the web application and server-side orchestration, with Supabase providing authentication, PostgreSQL, and object storage. Booking rules and authorization are enforced in the database. Background work is persisted in PostgreSQL and processed through a protected endpoint on Vercel.
+
+```mermaid
+flowchart LR
+    Browser["Student / mentor"] --> Web["Next.js application<br/>Vercel"]
+    Web --> Auth["Supabase Auth"]
+    Web --> Database[("PostgreSQL<br/>Community, bookings, outbox")]
+    Web --> Storage["Supabase Storage<br/>Public images / private previews"]
+    Web <-->|"Test checkout / webhooks"| Razorpay["Razorpay sandbox"]
+    Cron["Supabase Cron + Vault"] -->|"Signed request every minute"| Worker["Protected worker endpoint<br/>Vercel"]
+    Worker --> Database
+    Worker --> Storage
+    Worker -->|"Payment recovery"| Razorpay
 ```
 
-Use Razorpay **Test mode** API keys. Live key IDs are refused. The Supabase secret key comes from the same nexus-rebuild project, under Settings → API keys → Secret keys. Never put these secrets in chat, a commit, browser code or a NEXT_PUBLIC variable. Configure Razorpay automatic capture for the test integration; authorization alone leaves the booking unconfirmed.
+| Layer                  | Technology                                                      | Responsibility                                                                          |
+| ---------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Application            | Next.js 16 App Router, React 19, TypeScript                     | Server-rendered pages, server actions, authenticated workflows, and API routes.         |
+| Data and identity      | Supabase Auth, PostgreSQL, Supabase Storage                     | Accounts, row-level access, transactional booking rules, posts, and uploaded assets.    |
+| Background processing  | PostgreSQL outbox, Supabase Cron, Vercel Functions              | Notification delivery, reminder scheduling, payment reconciliation, and refunds.        |
+| Payments               | Razorpay Orders, Checkout, and webhooks                         | Server-verified sandbox payments in INR.                                                |
+| Validation and quality | Zod, Node.js test runner, PGlite, PostgreSQL 17, GitHub Actions | Input validation, SQL integration tests, concurrent-connection tests, and build checks. |
 
-Configure a publicly reachable HTTPS webhook endpoint ending in `/api/payments/razorpay/webhook`, with the same webhook secret. Subscribe to `payment.captured`, `payment.failed`, `order.paid`, `refund.processed` and `refund.failed`. Localhost cannot receive provider webhooks directly; use a staging deployment or an explicitly configured public development tunnel. No tunnel is opened automatically. Follow [Razorpay webhook testing](https://razorpay.com/docs/webhooks/validate-test).
+### Engineering decisions
 
-Run the durable payment worker alongside local development:
+- **Atomic booking transactions.** A booking reserves the slot, the free-call allowance, and both participants together. PostgreSQL exclusion constraints prevent overlapping reservations even when someone acts as a student in one session and a mentor in another.
+- **Retry-safe operations.** Stable request keys return the existing booking instead of creating duplicates. Payment callbacks and webhook replays are checked against stored provider records.
+- **Transactional notifications.** Booking events create inbox records and delivery jobs in the same transaction. Workers use exclusive leases, bounded retries, and conditional acknowledgements; cancellation suppresses outstanding reminders.
+- **Server-verified payments.** A paid booking is confirmed only after captured payment is verified against its stored order, amount, and currency. Expired holds and late captures have explicit recovery/refund paths.
+- **Private session access.** Row-level security restricts bookings and inbox entries to their participants or recipients. Meeting URLs are retrieved through an authorized, time-limited flow; service credentials remain server-only.
+- **Authenticated scheduling.** Scheduled requests use short-lived HMAC signatures and single-use nonces. The reusable worker secret stays in Vault and Vercel configuration rather than entering the HTTP request queue.
 
-```powershell
-npm run payments:work -- --watch
-```
+## Quick start
 
-Without `--watch`, it processes one batch and exits. Schedule repeated worker runs on deployment, with the same private environment. Browser verification gives immediate confirmation; webhooks and the worker recover missed callbacks and process refunds after a browser closes. Jobs use leases, bounded backoff and a visible review state when recovery is exhausted. The worker is required for unattended retry processing; refresh alone is not an operational substitute.
+### Prerequisites
 
-Cancel before the session starts to request a full refund. Cancellation immediately releases the slot; the payment summary remains Refund pending until provider verification reports success. Paid cancellation never restores the free introduction. Late capture after expiry also creates a tracked full refund. No subscriptions, commissions, bank-account collection, automatic mentor transfers or live-mode switch are included.
+- Node.js **22.12 or newer**; the deployment and CI use Node.js 22.
+- npm.
+- A Supabase database with the repository migrations applied. Use a separate hosted development project or the local Docker-based stack below.
 
-## Run the app
+### 1. Install
 
-Use Node.js 22.12 or newer.
+From a fresh checkout:
 
-```powershell
-cd D:\Projects_after_jun_2026\mainpro1\nexus
+```bash
+git clone https://github.com/Alchemist-10/nexus_submitted.git nexus
+cd nexus
 npm ci
-# For a fresh checkout only: create .env.local if it does not exist
-if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
-npm run dev
+cp .env.example .env.local
 ```
 
-Visit <http://localhost:3000>. Without environment values, the landing page and account forms render and link to `/setup`; live accounts and bookings require a new Supabase connection. No fake backend or authentication bypass is used.
+On Windows PowerShell, `Copy-Item .env.example .env.local` is also available. When working in an existing checkout, keep its configured `.env.local`.
 
-The original database was deleted. Use a new project; old keys will not restore it. Never put a service-role/secret key in a `NEXT_PUBLIC_` variable.
+### 2. Connect Supabase
 
-## Option A: local Supabase
+<details>
+<summary><strong>Local development with Docker</strong></summary>
 
-Docker Desktop must be running. From this directory:
+Start Docker, then run these commands from the repository root:
 
-```powershell
+```bash
 npx supabase start
 npx supabase db reset
 npx supabase status
 ```
 
-`db reset` recreates the LOCAL database using the migration and seed. It is destructive to local development data. The seed contains two explicit demo accounts and is intended for local use only.
+The reset command recreates the **local development database** from migrations and loads [local sample accounts and availability](supabase/seed.sql). Use a disposable local stack; keep the seed out of hosted environments.
 
-Put the local API URL and publishable key shown by the CLI in `.env.local`:
+Copy the local API URL and public publishable/anon key into `.env.local`. Local Studio is available at `http://localhost:54323`, and the local email viewer at `http://localhost:54324`.
+
+</details>
+
+<details>
+<summary><strong>A separate hosted development project</strong></summary>
+
+1. Create your own Supabase project and apply [the migrations](supabase/migrations/) in timestamp order to that new database. Keep an existing project’s migration history intact.
+2. Add its API URL and publishable key to `.env.local`.
+3. Set the development Site URL to `http://localhost:3000` and allow `http://localhost:3000/auth/callback` in Supabase Auth.
+4. Enable email/password sign-up and email confirmation. Use an appropriate email sender for addresses outside your project team.
+
+The hosted scheduler is configured separately from application migrations; see the [deployment guide](docs/deployment.md). Do not apply production scheduling operations to a development project without configuring its target and credentials.
+
+</details>
+
+The core application uses:
 
 ```dotenv
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local publishable key>
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_api_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_public_publishable_key
 ```
 
-If your CLI only displays an anon JWT key, that public anon key is also accepted as the publishable-key value. Use the public key, never the service-role key. Restart `npm run dev` after changing environment values.
+The full configuration template is [`.env.example`](.env.example). Keep private values in `.env.local` or your hosting environment. Only public client configuration belongs in `NEXT_PUBLIC_` variables.
 
-Seed accounts:
+### 3. Start the application
 
-| Role    | Email              | Password               |
-| ------- | ------------------ | ---------------------- |
-| Mentor  | mentor@nexus.test  | Nexus-local-demo-2026! |
-| Learner | learner@nexus.test | Nexus-local-demo-2026! |
-
-Slots are seeded two days ahead. Fresh signups receive confirmation mail in the local email viewer at <http://localhost:54324>. The local Studio opens at <http://localhost:54323>.
-
-## Option B: a new hosted Supabase project
-
-This workspace is connected to **nexus-rebuild** (`amgwmeqophjaprqemqym`) in **2026-after_nov**. The foundation and community migrations are applied, and the ignored `.env.local` contains its public client configuration. Do not reapply the migration or overwrite that file when restarting this checkout.
-
-1. Create a new project using Supabase.
-2. Apply the files in `supabase/migrations/` in timestamp order, or link the project with the CLI and run `supabase db push`. Each migration is applied once. The current hosted project already has the foundation and community migrations. Keep local demo seeds out of production.
-3. Copy the project's API URL and publishable/anon key into `.env.local`.
-4. In Auth URL Configuration, set Site URL to `http://localhost:3000` for development. Allow `http://localhost:3000/auth/callback`.
-5. Enable email signup and email confirmation. Set a password minimum of at least 12 characters. Confirm your email before signing in.
-6. The default PKCE confirmation flow is handled by `/auth/callback`. For cross-device confirmation, update the Confirm Signup email template link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`; the app handles that route too.
-7. Configure a real email sender for a live project using Supabase's SMTP settings. The app does not silently skip email confirmation.
-
-Set the actual HTTPS deployment URL in both Supabase and `NEXT_PUBLIC_APP_URL` before building for deployment. `NEXT_PUBLIC_` values are embedded at build time: changing them in a production environment requires a rebuild. Local and hosted environment configuration stays outside Git.
-
-## Try the complete free booking flow
-
-1. Sign in as a mentor and open **Mentor studio**. Use matching expertise such as `DSA`, `Python`, or `React` to appear on relevant learning requests.
-2. Publish the mentor profile and add a future slot.
-3. Sign in as a different account in another browser profile or private window.
-4. Open the mentor profile and book the free introduction.
-5. Check that both accounts see the session in **My sessions**.
-6. The mentor adds an HTTPS video meeting link to that booking. It is not included in public mentor/slot data or general booking responses.
-7. **Meeting access** becomes available 15 minutes before the call and closes 15 minutes after it ends. Both role and booking state are checked on the server/database.
-8. Once the scheduled start has passed and the call is finished, the mentor chooses **End session**, then **End session & unlock rating** in My sessions or Meeting access. The learner can then submit a one-time 1�5 star rating in **My sessions**. Only the average and count are public; individual ratings are visible to the booking participants. Leaving Google Meet does not automatically complete the booking or verify attendance. Confirmed session screens refresh on return and every 15 seconds while visible. Every join click is checked on the server; completed sessions cannot launch the meeting through Nexus. Previously copied Google URLs remain controlled by Google.
-9. Cancelling before the start time restores the introduction. A completed call consumes the free introduction with that mentor. Another mentor has a separate allowance.
-
-A member can both mentor and learn. Public profile data includes name and username, not account email. This milestone has no elevated admin UI. No-show and paid cancellation policies will be designed with the payment milestone; a confirmed introduction continues to reserve the allowance until a supported transition occurs.
-
-## Your profile
-
-Click your picture/name in the header or open `/profile` to find your own Posts and Answers. Public author links lead to that person's activity; the Community feed remains shared. Profile settings, session shortcuts, and mentor setup shortcuts appear only to the owner. Public profiles contain no account email or booking history.
-
-In **Edit profile**, change your display name, unique handle, and short bio. Every account starts with a stable illustrated avatar; **Try another avatar** changes the default. You can also upload a PNG/JPEG/WebP photo up to 3 MiB. Profile photos and bios are public. Selecting a default and saving removes the prior uploaded photo. See [profile verification](docs/profiles-verification.md) for checks and boundaries.
-
-## Community and mentor matching
-
-The homepage is the student learning-request feed. Publish at `/posts/new`, then find relevant mentors on each `/posts/[id]` page. The main action leads to a free introductory call; public explanations provide context and evidence of how a mentor teaches. Public answers do not automatically grant reputation just for posting.
-
-Mentor matching requires overlap between request tags and normalized declared expertise or accepted-answer topic evidence. Matching topics dominate bounded contributions and availability signals. It includes new mentors with relevant expertise, excludes the question author and the viewing mentor themselves, and shows an honest empty state when no match exists. This is a deterministic baseline, not an AI model or a claim of verified credentials. Session star ratings are collected separately after completed bookings.
-
-`post-images` is a public Storage bucket explicitly approved by the owner. Only authenticated owners can upload/delete within their UUID path. The form checks raster signatures and limits uploads to three PNG/JPEG/WebP files of at most 3 MiB each. Text and code render as escaped plain text. Images and public discussions should never contain credentials or private student information. Reports are visible only to their reporter and privileged database operators; review them in Supabase until the moderation dashboard is built.
-
-The feed uses pages of 15; post detail currently loads up to 100 answers. Search matches titles, details, the point of confusion, and recognized topic tags. There is no automatic image understanding, spam detection, or semantic ranking. See [community verification](docs/community-verification.md) and [rating verification](docs/ratings-verification.md) for evidence and limits.
-
-## Verify
-
-```powershell
-npm run typecheck
-npm run lint
-npm run format:check
-npm test
-npm run build
+```bash
+npm run dev
 ```
 
-The default tests execute the real migration, constraints, RLS policies, and functions in PGlite PostgreSQL. Only the Supabase-managed auth schema/identity context is simulated in tests. Coverage includes unauthorized writes, row privacy, duplicate requests, repeat trials, cancellations, cross-role overlapping sessions, transaction rollback, join-window privacy, and validation.
+Open **[localhost:3000](http://localhost:3000)**. Use separate browser sessions for the mentor and student when testing a complete booking journey.
 
-PGlite has one backend, so the independent-connection race test is deliberately skipped there. It does not validate Supabase's actual email/Auth/PostgREST stack. CI also runs the suite on a disposable PostgreSQL 17 service to exercise independent connections. [The verified CI run](https://github.com/Alchemist-10/nexus_submitted/actions/runs/44459308194) passed all 29 tests on PostgreSQL 17, including the concurrent booking race, as well as type/lint/format checks and the production build. Hosted password authentication, booking authorization, concurrent reservation, and the two-account browser booking journey have also passed against the selected project. See [verification notes](docs/verification.md) for scope and remaining email-delivery verification.
+### Optional: background jobs and sandbox checkout
 
-To run that mode yourself, first create a disposable localhost database named `nexus_test_local` and use an appropriately privileged test user:
+| Capability                  | Configuration                                                                                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Notification inbox          | Created by booking events; no email provider is required. Scheduled reminders also require a running worker.                                                             |
+| Local notification previews | Set the server-only `SUPABASE_SECRET_KEY`, keep `NOTIFICATION_TRANSPORT=preview`, and run `npm run notifications:watch`.                                                 |
+| Razorpay test checkout      | Add `RAZORPAY_KEY_ID` with an `rzp_test_` prefix, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, and `SUPABASE_SECRET_KEY`. Complete the sandbox configuration below. |
+| Hosted background jobs      | Configure private preview storage, the protected worker endpoint, and signed Cron dispatch using the deployment guide.                                                   |
 
-```powershell
-$env:DATABASE_TEST_URL = 'postgres://test_user:test_password@localhost:5432/nexus_test_local'
-$env:ALLOW_DATABASE_TEST_RESET = '1'
-npm test
-Remove-Item Env:DATABASE_TEST_URL
-Remove-Item Env:ALLOW_DATABASE_TEST_RESET
+<details>
+<summary><strong>Sandbox payment configuration</strong></summary>
+
+1. Generate API credentials in Razorpay **Test Mode**. Live key IDs are refused by the application.
+2. Set `RAZORPAY_WEBHOOK_SECRET` to a private random value, then use that same value when configuring the webhook in Razorpay.
+3. Set the webhook URL to `https://YOUR_APP_DOMAIN/api/payments/razorpay/webhook` and subscribe to `payment.captured`, `payment.failed`, `order.paid`, `refund.processed`, and `refund.failed`. Local testing needs a public HTTPS development endpoint; Razorpay cannot deliver directly to localhost.
+4. Enable automatic payment capture for the test integration. Authorization alone does not confirm a booking.
+5. Run the payment recovery worker alongside local development:
+
+```bash
+npm run payments:work
 ```
 
-That mode DROPS and recreates application/auth schemas in the selected test database. The test helper rejects non-local hosts, databases without the `nexus_test` prefix, and runs without explicit reset opt-in. Never point it at a Supabase project or a database containing data you want to keep.
+This processes one batch and exits. Repeat it for unattended reconciliation and refund retries, or configure the hosted scheduler in the [deployment guide](docs/deployment.md). For the complete checkout journey, finish a free introduction with the same mentor before booking a paid follow-up.
 
-`/api/health` is a liveness endpoint. Its `databaseConfigured` field only indicates environment configuration, not a successful database connection.
+The [payment verification record](docs/payments-verification.md) distinguishes provider simulations from actual sandbox transactions and webhook deliveries.
 
-## Structure
+</details>
+
+For an immediate reminder demonstration:
+
+```bash
+npm run notifications:demo
+```
+
+This runs the actual booking, queue, and worker code in an isolated in-memory database and accelerates reminder deadlines. It writes local previews without changing hosted bookings or sending email.
+
+## Development and verification
+
+```bash
+npm run check
+```
+
+This runs type checking, linting, formatting checks, application/SQL tests, payment-flow tests, and a production build.
+
+[GitHub Actions](https://github.com/Alchemist-10/nexus_submitted/actions/workflows/ci.yml) also runs the suite against a disposable **PostgreSQL 17** service. Independent-connection race tests execute there; they are skipped in the single-backend PGlite run. Tests cover authorization, booking conflicts and rollback, repeat requests, ratings, notification recovery, payment verification, and signed worker replay protection.
+
+Provider mocks, actual sandbox checks, and deployed browser checks are documented separately in the verification records. These checks establish tested behavior; they are not a claim of production traffic capacity or public adoption.
+
+## Repository structure
 
 ```text
-src/app/                 Pages and auth callbacks
-src/components/          Small reusable UI/form components
-src/features/auth/       Authentication actions
-src/features/bookings/   Booking actions and queries
-src/features/mentorship/ Public mentor queries
-src/lib/                 Validated inputs, session/env/database contracts
-src/proxy.ts             Registered cookie-refresh proxy
-supabase/migrations/     Reproducible database schema and functions
-supabase/seed.sql        Local-only demo data
-tests/                   SQL integration and validation tests
-docs/phase-one-design.md Approved scope, defaults, and implementation plan
+src/
+  app/                  Pages, layouts, auth callbacks, and API routes
+  components/           Reusable interface and form components
+  features/             Auth, community, mentorship, bookings, payments,
+                        profiles, notifications, and worker orchestration
+  lib/                  Validation, database types, sessions, and clients
+  proxy.ts              Supabase session-cookie refresh
+supabase/
+  migrations/           Versioned application schema and database functions
+  operations/           Hosted-only scheduler setup
+  seed.sql              Local development fixtures
+scripts/                Background workers and local demonstrations
+tests/                  SQL integration, workflow, and validation tests
+docs/                   Deployment, design, and verification records
+.github/workflows/      Continuous integration
 ```
 
-`src/lib/database.generated.ts` was generated from the running hosted database after migration. `src/lib/database.types.ts` exports application aliases from that generated schema. Regenerate the former after future migrations using the Supabase integration or `npx supabase gen types typescript --project-id YOUR_ID`; review the output before committing.
+## Documentation
 
-The database is authoritative: narrow RPCs validate the authenticated identity and reserve/cancel/complete sessions. General table writes are revoked. Participant reservations use GiST exclusion constraints, so an account cannot be a learner in one overlapping booking and a mentor in another. Meeting data has no direct API read grant. Definer functions use an empty search path, explicit object names, restricted execute grants, and ownership checks.
+| Guide                                                           | Contents                                                                                                         |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [Deployment and operations](docs/deployment.md)                 | Hosted architecture, environment configuration, signed scheduling, deployment checks, and free-tier limitations. |
+| [Booking and authorization](docs/verification.md)               | Transactional reservations, participant access, idempotency, and concurrency verification.                       |
+| [Community and recommendations](docs/community-verification.md) | Posts, images, answers, votes, topic matching, and access policies.                                              |
+| [Payments](docs/payments-verification.md)                       | Sandbox checkout, capture verification, webhook handling, refunds, and recovery.                                 |
+| [Notifications](docs/notifications-verification.md)             | Inbox behavior, timing rules, local previews, retries, and delivery limits.                                      |
+| [Profiles](docs/profiles-verification.md)                       | Public identity, avatars, contribution history, and owner-only editing.                                          |
+| [Session completion](docs/session-ending-verification.md)       | Mentor-controlled completion and meeting-access transitions.                                                     |
+| [Ratings](docs/ratings-verification.md)                         | Completed-session eligibility, immutable learner ratings, and public summaries.                                  |
 
-## Next milestones
+## Scope and next steps
 
-1. Password recovery and confirmation resend.
-2. Shared rate limits, upload quotas, and mentor/moderation controls.
-3. Monitoring, reproducible synthetic load tests, and broader browser regression coverage. Payments stay test-only for the portfolio demonstration.
+The current release is a deployed portfolio demonstration. Mentor recommendations use explainable topic and contribution signals. Video calls use external meeting providers; the mentor ends the Nexus session explicitly to unlock rating. Payment flows remain sandbox-only, and notification email delivery remains in preview mode.
+
+The next priorities are:
+
+- Password recovery and confirmation-email resend.
+- Shared publishing/upload quotas and mentor/moderation controls.
+- Error monitoring, broader browser regression coverage, and reproducible synthetic load benchmarks.
+
+See the [deployment guide](docs/deployment.md) for current operational constraints, including free-tier availability and GitHub auto-deployment setup.

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <style>path{fill:#742d43}@media(prefers-color-scheme:dark){path{fill:#edb1c5}}</style>
+  <g transform="translate(14 8)">
+    <path d="M43 0 100 29 43 45Z"/>
+    <path d="M43 45V57L21 68C5 76 5 81 18 91L47 112H0V74C0 58 18 53 43 45Z"/>
+    <path d="M100 29V104L37 79C22 72 29 66 100 29Z"/>
+  </g>
+</svg>

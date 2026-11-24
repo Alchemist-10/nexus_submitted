@@ -1,6 +1,9 @@
 <div align="center">
 
-# Nexus
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/brand/nexus-wordmark-dark.svg">
+  <img src="public/brand/nexus-wordmark.svg" alt="Nexus" width="290" height="72">
+</picture>
 
 ### A question. A person. A next step.
 
@@ -229,6 +232,7 @@ docs/                   Deployment, design, and verification records
 | [Profiles](docs/profiles-verification.md)                       | Public identity, avatars, contribution history, and owner-only editing.                                          |
 | [Session completion](docs/session-ending-verification.md)       | Mentor-controlled completion and meeting-access transitions.                                                     |
 | [Ratings](docs/ratings-verification.md)                         | Completed-session eligibility, immutable learner ratings, and public summaries.                                  |
+| [Brand identity](docs/branding.md)                              | Logo assets, light/dark wordmarks, colors, and usage guidance.                                                   |
 
 ## Scope and next steps
 

@@ -30,7 +30,7 @@ Each student receives **one free introductory call per mentor**. Completing that
 
 ## Product tour
 
-Captured from the deployed application at **2880 pixels wide** using a 2× browser scale. The private views use a sample student account; session, payment, and rating records are portfolio test data. [Capture details](docs/screenshots/README.md).
+Captured from the deployed application in high resolution: **2880px-wide desktop views** and **2940px-wide meeting-ticket close-ups**. The private views use a sample student account; session, payment, and rating records are portfolio test data. [Capture details](docs/screenshots/README.md).
 
 **Community workspace** — share a learning request, explore engineering topics, search the feed, and find someone to work through the problem with.
 
@@ -40,6 +40,14 @@ Captured from the deployed application at **2880 pixels wide** using a 2× brows
 </picture>
 
 [Light mode · full resolution](docs/screenshots/community-light.png) · [Dark mode · full resolution](docs/screenshots/community-dark.png)
+
+**Meeting ticket · light mode** — a completed sample introduction with a calendar-style date strip, mentor identity, local session time, duration, and the student's rating.
+
+[![Meeting-ticket close-up in light mode showing the date strip, mentor, completed status, free introduction, local time, duration, and session rating](docs/screenshots/meeting-ticket-light.png)](docs/screenshots/meeting-ticket-light.png)
+
+**Meeting ticket · dark mode** — the same session ticket in the graphite and burgundy theme.
+
+[![The same completed sample meeting ticket in dark mode, with its date strip, mentor, local time, duration, and rating](docs/screenshots/meeting-ticket-dark.png)](docs/screenshots/meeting-ticket-dark.png)
 
 Expand a feature below to explore the rest of the application. Select an image to open its original resolution.
 

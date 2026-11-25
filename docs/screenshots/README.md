@@ -2,19 +2,19 @@
 
 Captured on **25 November 2026** from the [deployed Nexus application](https://nexus-mentorship-akshay-vss-projects.vercel.app).
 
-The browser viewport was 1440 × 1000 CSS pixels. Desktop screenshots use a device scale factor of 2 and are 2880 physical pixels wide. The meeting-ticket close-ups use a scale factor of 3 and are browser element captures of the existing completed-session card, 2940 × 945 pixels. All images are lossless PNGs. Longer feature pages use full-page captures; community images preserve the viewport composition.
+The browser viewport was 1440 × 1000 CSS pixels. Desktop screenshots use a device scale factor of 2 and are 2880 physical pixels wide. The light-mode meeting-ticket close-up uses a scale factor of 3 and is a browser element capture of the existing completed-session card, 2940 × 945 pixels. All images are lossless PNGs. Longer feature pages use full-page captures; community images preserve the viewport composition.
 
-| Image                                                | Resolution  | Feature                                                                           | Source                                              |
-| ---------------------------------------------------- | ----------- | --------------------------------------------------------------------------------- | --------------------------------------------------- |
-| [community-light.png](community-light.png)           | 2880 × 2000 | Community workspace, light theme                                                  | Public home page                                    |
-| [community-dark.png](community-dark.png)             | 2880 × 2000 | Community workspace, dark theme                                                   | Public home page                                    |
-| [question-and-mentors.png](question-and-mentors.png) | 2880 × 4198 | Image post, accepted answer, and mentor recommendations                           | Public sample learning request                      |
-| [mentor-discovery.png](mentor-discovery.png)         | 2880 × 2832 | Expertise filters, ratings, and follow-up pricing                                 | Public mentor directory                             |
-| [mentor-profile.png](mentor-profile.png)             | 2880 × 2000 | Expertise, bio, rating, and booking availability                                  | Sample mentor profile, viewed as the sample student |
-| [session-history.png](session-history.png)           | 2880 × 6168 | Booking states, sandbox payment/refund status, and rating                         | Sample student session history                      |
-| [notification-inbox.png](notification-inbox.png)     | 2880 × 3782 | Read/unread booking and meeting updates                                           | Sample student private inbox                        |
-| [meeting-ticket-light.png](meeting-ticket-light.png) | 2940 × 945  | Meeting-ticket date strip, local time, completed status, and rating in light mode | Existing completed sample introduction              |
-| [meeting-ticket-dark.png](meeting-ticket-dark.png)   | 2940 × 945  | The same meeting ticket in dark mode                                              | Existing completed sample introduction              |
+| Image                                                  | Resolution  | Feature                                                                           | Source                                                          |
+| ------------------------------------------------------ | ----------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [community-light.png](community-light.png)             | 2880 × 2000 | Community workspace, light theme                                                  | Public home page                                                |
+| [community-dark.png](community-dark.png)               | 2880 × 2000 | Community workspace, dark theme                                                   | Public home page                                                |
+| [question-and-mentors.png](question-and-mentors.png)   | 2880 × 4198 | Image post, accepted answer, and mentor recommendations                           | Public sample learning request                                  |
+| [mentor-discovery.png](mentor-discovery.png)           | 2880 × 2832 | Expertise filters, ratings, and follow-up pricing                                 | Public mentor directory                                         |
+| [mentor-profile.png](mentor-profile.png)               | 2880 × 2000 | Expertise, bio, rating, and booking availability                                  | Sample mentor profile, viewed as the sample student             |
+| [session-history.png](session-history.png)             | 2880 × 6168 | Booking states, sandbox payment/refund status, and rating                         | Sample student session history                                  |
+| [notification-inbox.png](notification-inbox.png)       | 2880 × 3782 | Read/unread booking and meeting updates                                           | Sample student private inbox                                    |
+| [meeting-ticket-light.png](meeting-ticket-light.png)   | 2940 × 945  | Meeting-ticket date strip, local time, completed status, and rating in light mode | Existing completed sample introduction                          |
+| [razorpay-test-payment.png](razorpay-test-payment.png) | 2880 × 2000 | Razorpay test-mode payment confirmation for a paid follow-up                      | Existing captured sandbox payment, viewed as the sample student |
 
 The signed-in views belong to the existing **Riya Sharma sample account**. The mentor, answer, rating, session, payment, and notification examples are portfolio test records. Payment confirmations and refunds shown use Razorpay sandbox data; the images do not establish real customer usage or live charges. Availability and unread counts reflect the state at capture time.
 

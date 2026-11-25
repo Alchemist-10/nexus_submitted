@@ -14,7 +14,7 @@ A mentorship platform for engineering students to share where they are stuck, fi
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-742d43?style=flat-square&logo=postgresql&logoColor=white)
 
-**[Explore the live demo](https://nexus-mentorship-akshay-vss-projects.vercel.app)** · [Architecture](#architecture) · [Quick start](#quick-start) · [Documentation](#documentation)
+**[Explore the live demo](https://nexus-mentorship-akshay-vss-projects.vercel.app)** · [Product tour](#product-tour) · [Architecture](#architecture) · [Quick start](#quick-start) · [Documentation](#documentation)
 
 </div>
 
@@ -27,6 +27,66 @@ Nexus connects engineering students with people who can help them reason through
 Each student receives **one free introductory call per mentor**. Completing that introduction unlocks optional follow-up bookings. The community feed gives those conversations context, while profiles, contributions, and completed-session ratings help students choose whom to approach.
 
 > **Portfolio release:** the deployed application includes sample accounts and content. Payments use Razorpay test mode, and notification emails are stored as private previews. No real charges or automated mentor payouts are enabled.
+
+## Product tour
+
+Captured from the deployed application at **2880 pixels wide** using a 2× browser scale. The private views use a sample student account; session, payment, and rating records are portfolio test data. [Capture details](docs/screenshots/README.md).
+
+**Community workspace** — share a learning request, explore engineering topics, search the feed, and find someone to work through the problem with.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/community-dark.png">
+  <img src="docs/screenshots/community-light.png" alt="Nexus community workspace with engineering topics, searchable learning requests, and mentor discovery" width="1440">
+</picture>
+
+[Light mode · full resolution](docs/screenshots/community-light.png) · [Dark mode · full resolution](docs/screenshots/community-dark.png)
+
+Expand a feature below to explore the rest of the application. Select an image to open its original resolution.
+
+<details>
+<summary><strong>Learning requests, accepted answers, and mentor recommendations</strong></summary>
+
+A question combines the student's context, an uploaded diagram, and the specific point of confusion. Mentor explanations, author acceptance, upvotes, and topic-based recommendations keep the next conversation grounded in that problem.
+
+[![A learning request with an uploaded diagram, an accepted mentor answer, upvote counts, and recommended mentors](docs/screenshots/question-and-mentors.png)](docs/screenshots/question-and-mentors.png)
+
+</details>
+
+<details>
+<summary><strong>Mentor discovery</strong></summary>
+
+Search by name or field, filter by expertise, and compare profiles, session ratings, introductory-call availability, and follow-up prices.
+
+[![Mentor discovery with expertise filters, free-introduction labels, ratings, and INR follow-up prices](docs/screenshots/mentor-discovery.png)](docs/screenshots/mentor-discovery.png)
+
+</details>
+
+<details>
+<summary><strong>Mentor profiles and the booking entry point</strong></summary>
+
+Review a mentor's background, topics, community identity, completed-session rating, and the free-introduction policy before choosing a time. This capture shows the sample mentor's empty-availability state.
+
+[![A mentor profile showing expertise, bio, session rating, free-introduction policy, and the booking availability panel](docs/screenshots/mentor-profile.png)](docs/screenshots/mentor-profile.png)
+
+</details>
+
+<details>
+<summary><strong>Session history, sandbox payments, and ratings</strong></summary>
+
+The student workspace tracks free and paid sessions with distinct booking states, timezone-aware times, payment/refund status, and a rating after a completed call. All payment records shown are from Razorpay test mode.
+
+[![Sample student session history showing cancelled, confirmed, and completed sessions, sandbox payments, a processed refund, and a completed-session rating](docs/screenshots/session-history.png)](docs/screenshots/session-history.png)
+
+</details>
+
+<details>
+<summary><strong>Private notification inbox</strong></summary>
+
+Booking confirmations, cancellations, and meeting updates appear in a recipient-only inbox with read/unread states and links to the relevant session. The worker also schedules 24-hour and 15-minute reminders; this capture shows the sample account's existing booking updates.
+
+[![Sample student's notification inbox with unread counts, confirmation and cancellation updates, meeting-detail updates, and session links](docs/screenshots/notification-inbox.png)](docs/screenshots/notification-inbox.png)
+
+</details>
 
 ## The experience
 
